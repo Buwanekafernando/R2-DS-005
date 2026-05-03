@@ -1,0 +1,14 @@
+torch
+transformers
+fastapi
+uvicorn
+streamlit
+groq
+python-dotenv
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+joblib
+imbalanced-learn
