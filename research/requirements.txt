@@ -1,0 +1,9 @@
+requests
+python-dotenv
+pydantic
+rich
+streamlit
+pytest
+pandas
+numpy
+scikit-learn
