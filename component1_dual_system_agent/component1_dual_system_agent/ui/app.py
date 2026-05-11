@@ -618,7 +618,7 @@ else:
 
                     if rows:
                         st.markdown("""
-                        <div class="nm-card">
+    k                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="nm-card">
                           <div class="nm-card-header">
                             <span class="nm-card-title">Batch Results</span>
                           </div>
