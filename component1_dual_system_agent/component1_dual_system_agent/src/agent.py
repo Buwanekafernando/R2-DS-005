@@ -1,13 +1,11 @@
 
 
+import os
 import torch
 import time
-import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from nltk.sentiment import SentimentIntensityAnalyzer
 from dotenv import load_dotenv
-
-# Import your clean functions from src/generator.py
 from src.generator import (
     build_emotional_prompt,
     build_rational_prompt,
@@ -15,7 +13,9 @@ from src.generator import (
     generate_copy
 )
 
-load_dotenv("config/.env")
+# ── Fix: absolute path ────────────────────────────────────
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(BASE_DIR, "config", ".env"))
 
 
 class DualSystemAgent:
