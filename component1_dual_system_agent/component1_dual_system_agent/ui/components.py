@@ -21,13 +21,13 @@ def render_classification_badge(cognitive_mode, confidence):
         border  = "#FAC775"
         text_c  = "#633806"
         label   = "System 1 — Emotional / Impulsive"
-        icon    = "⚡"
+        icon    = ""
     else:
         color   = "#E6F1FB"
         border  = "#B5D4F4"
         text_c  = "#0C447C"
         label   = "System 2 — Rational / Deliberative"
-        icon    = "🔍"
+        icon    = ""
 
     st.markdown(f"""
         <div style='background:{color}; border:1px solid {border};
@@ -135,7 +135,7 @@ def render_strategy_box(strategy, explanation):
     color  = "#EAF3DE" if strategy == "emotional" else "#E6F1FB"
     border = "#A4D06B" if strategy == "emotional" else "#B5D4F4"
     tcolor = "#27500A" if strategy == "emotional" else "#0C447C"
-    icon   = "⚡"       if strategy == "emotional" else "🔍"
+    icon   = ""       if strategy == "emotional" else ""
 
     st.markdown(f"""
         <div style='background:{color}; border:1px solid {border};

@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # ── Page config ───────────────────────────────────────────
 st.set_page_config(
     page_title = "NeuroMark AI — Dual System Agent",
-    page_icon  = "🧠",
+    page_icon  = "",
     layout     = "wide",
     initial_sidebar_state = "collapsed"
 )
@@ -25,9 +25,7 @@ CATEGORIES = [
     "Automotive", "Industrial", "Unknown"
 ]
 
-# ════════════════════════════════════════════════════════
-# GLOBAL CSS — NeuroMark template design system
-# ════════════════════════════════════════════════════════
+
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -149,9 +147,7 @@ html, body, [class*="css"] {
 """, unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
-# HELPERS
-# ════════════════════════════════════════════════════════
+
 def check_api():
     try:
         r = requests.get(f"{API_URL}/health", timeout=2)
@@ -174,13 +170,13 @@ def success_box(msg):
     <div style="background:var(--teal-50);border:1px solid var(--teal-100);
                 border-radius:var(--radius-md);padding:12px 16px;
                 color:var(--teal-600);font-size:13px;font-weight:500;margin-bottom:12px">
-      ✓ {msg}
+      {msg}
     </div>""", unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
+
 # NAV BAR
-# ════════════════════════════════════════════════════════
+
 api_online = check_api()
 api_label  = "● API online"   if api_online else "● API offline"
 api_cls    = "api-pill online" if api_online else "api-pill offline"
@@ -213,19 +209,19 @@ st.markdown("""
   </div>
   <div class="stat-chips">
     <div class="stat-chip">
-      <div class="sci sci-blue">🧠</div>
+      <div class="sci sci-blue"></div>
       <div><div class="sc-label">Classification Model</div><div class="sc-value">RoBERTa Fine-tuned</div></div>
     </div>
     <div class="stat-chip">
-      <div class="sci sci-coral">✍️</div>
+      <div class="sci sci-coral"></div>
       <div><div class="sc-label">Copy Generation</div><div class="sc-value">Grok / Gemini LLM</div></div>
     </div>
     <div class="stat-chip">
-      <div class="sci sci-amber">⚡</div>
+      <div class="sci sci-amber"></div>
       <div><div class="sc-label">Framework</div><div class="sc-value">Dual Process Theory</div></div>
     </div>
     <div class="stat-chip">
-      <div class="sci sci-teal">🔗</div>
+      <div class="sci sci-teal"></div>
       <div><div class="sc-label">Pipeline Role</div><div class="sc-value">Agent 1 of 4</div></div>
     </div>
   </div>
@@ -388,10 +384,10 @@ if mode == "single":
             # Mode colors
             if mode_val == "System1":
                 bg_c, bdr_c, txt_c, bar_c = "var(--amber-50)", "var(--amber-100)", "var(--amber-600)", "var(--amber-400)"
-                mode_icon, mode_label = "⚡", "System 1 — Emotional / Impulsive"
+                mode_icon, mode_label = "", "System 1 — Emotional / Impulsive"
             else:
                 bg_c, bdr_c, txt_c, bar_c = "var(--blue-50)", "var(--blue-100)", "var(--blue-600)", "var(--blue-600)"
-                mode_icon, mode_label = "🔍", "System 2 — Rational / Deliberative"
+                mode_icon, mode_label = "", "System 2 — Rational / Deliberative"
 
             # ── Classification result card ────────────
             st.markdown(f"""
@@ -427,8 +423,8 @@ if mode == "single":
             is_rat_rec = strategy == "rational"
             emo_bdr    = "2px solid var(--amber-400)" if is_emo_rec else "1px solid var(--amber-100)"
             rat_bdr    = "2px solid var(--blue-600)"  if is_rat_rec else "1px solid var(--blue-100)"
-            emo_rec    = "✅ Recommended" if is_emo_rec else ""
-            rat_rec    = "✅ Recommended" if is_rat_rec else ""
+            emo_rec    = "Recommended" if is_emo_rec else ""
+            rat_rec    = "Recommended" if is_rat_rec else ""
 
             s_bg  = "var(--amber-50)"  if strategy == "emotional" else "var(--blue-50)"
             s_bdr = "var(--amber-100)" if strategy == "emotional" else "var(--blue-100)"
@@ -519,7 +515,6 @@ if mode == "single":
             <div class="nm-card">
               <div class="nm-card-body">
                 <div class="empty-state">
-                  <div class="empty-icon">🧠</div>
                   <div class="empty-title">Ready to Analyze</div>
                   <div class="empty-desc">
                     Enter a product description and click
