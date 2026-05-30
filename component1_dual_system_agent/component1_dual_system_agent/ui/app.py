@@ -1,4 +1,3 @@
-# ui/app.py
 # Run with: python -m streamlit run ui/app.py
 
 import sys
@@ -9,7 +8,7 @@ import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# ── Page config ───────────────────────────────────────────
+
 st.set_page_config(
     page_title = "NeuroMark AI — Dual System Agent",
     page_icon  = "",
@@ -24,6 +23,27 @@ CATEGORIES = [
     "Baby", "Pet Products", "Sports", "Home & Kitchen",
     "Automotive", "Industrial", "Unknown"
 ]
+
+
+DISTRICTS = [
+    "Ampara","Anuradhapura","Badulla","Batticaloa","Colombo",
+    "Galle","Gampaha","Hambantota","Jaffna","Kalutara","Kandy",
+    "Kegalle","Kilinochchi","Kurunegala","Mannar","Matale",
+    "Matara","Monaragala","Mullaitivu","Nuwara Eliya","Polonnaruwa",
+    "Puttalam","Ratnapura","Trincomalee","Vavuniya"
+]
+GENDER_OPTIONS     = ["Male", "Female", "Prefer not to say"]
+AGE_OPTIONS        = ["Under 18","18 – 24","25 – 34","35 – 44","45 – 54","55 and above"]
+OCCUPATION_OPTIONS = [
+    "Student","Government employee","Private sector employee",
+    "Self-employed / Business owner","Homemaker","Other"
+]
+SPENDING_OPTIONS = [
+    "Less than Rs. 5,000","Rs. 5,000 – Rs. 15,000",
+    "Rs. 15,001 – Rs. 30,000","Rs. 30,001 – Rs. 50,000",
+    "More than Rs. 50,000"
+]
+CULTURE_OPTIONS = ["Yes, strongly","Somewhat","No, not at all"]
 
 
 st.markdown("""
@@ -164,7 +184,7 @@ def error_box(msg):
       {msg}
     </div>""", unsafe_allow_html=True)
 
-
+# success box
 def success_box(msg):
     st.markdown(f"""
     <div style="background:var(--teal-50);border:1px solid var(--teal-100);
@@ -174,9 +194,7 @@ def success_box(msg):
     </div>""", unsafe_allow_html=True)
 
 
-
-# NAV BAR
-
+#nav bar
 api_online = check_api()
 api_label  = "● API online"   if api_online else "● API offline"
 api_cls    = "api-pill online" if api_online else "api-pill offline"
@@ -193,9 +211,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
-# HERO
-# ════════════════════════════════════════════════════════
+#hero section
 st.markdown("""
 <div class="nm-hero">
   <div>
@@ -209,19 +225,19 @@ st.markdown("""
   </div>
   <div class="stat-chips">
     <div class="stat-chip">
-      <div class="sci sci-blue"></div>
+      <div class="sci sci-blue">🧠</div>
       <div><div class="sc-label">Classification Model</div><div class="sc-value">RoBERTa Fine-tuned</div></div>
     </div>
     <div class="stat-chip">
-      <div class="sci sci-coral"></div>
+      <div class="sci sci-coral">👤</div>
+      <div><div class="sc-label">Demographic Model</div><div class="sc-value">Survey-trained</div></div>
+    </div>
+    <div class="stat-chip">
+      <div class="sci sci-amber">✍️</div>
       <div><div class="sc-label">Copy Generation</div><div class="sc-value">Grok / Gemini LLM</div></div>
     </div>
     <div class="stat-chip">
-      <div class="sci sci-amber"></div>
-      <div><div class="sc-label">Framework</div><div class="sc-value">Dual Process Theory</div></div>
-    </div>
-    <div class="stat-chip">
-      <div class="sci sci-teal"></div>
+      <div class="sci sci-teal">🔗</div>
       <div><div class="sc-label">Pipeline Role</div><div class="sc-value">Agent 1 of 4</div></div>
     </div>
   </div>
@@ -229,9 +245,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
-# MODE TOGGLE  (replaces sidebar radio)
-# ════════════════════════════════════════════════════════
+#mode toggle
 if "mode" not in st.session_state:
     st.session_state.mode = "single"
 
@@ -247,7 +261,6 @@ with c2:
         st.rerun()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Active tab indicator
 single_active = "background:var(--text-primary);color:#fff"
 batch_active  = "background:var(--text-primary);color:#fff"
 single_idle   = "background:var(--surface);color:var(--text-secondary);border:1px solid var(--border)"
@@ -268,18 +281,16 @@ st.markdown(f"""
 mode = st.session_state.mode
 
 
-# ════════════════════════════════════════════════════════
-# SINGLE PRODUCT MODE
-# ════════════════════════════════════════════════════════
+#single product
 if mode == "single":
 
     st.markdown('<div style="max-width:1280px;margin:0 auto;padding:0 40px;">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1.1, 1.7], gap="large")
 
-    # ── LEFT ─────────────────────────────────────────
+  
     with col_left:
 
-        # Input card
+        
         st.markdown("""
         <div class="nm-card">
           <div class="nm-card-header">
@@ -305,6 +316,116 @@ if mode == "single":
         category = st.selectbox("cat", CATEGORIES, key="sel_category")
         st.markdown("</div></div>", unsafe_allow_html=True)
 
+#consumer profile
+        st.markdown("""
+        <div class="nm-card">
+          <div class="nm-card-header">
+            <span class="nm-card-title">Consumer Profile</span>
+            <span style="font-size:10px;background:var(--purple-50);color:var(--purple-800);
+                         border:1px solid var(--purple-100);padding:2px 8px;
+                         border-radius:20px;font-weight:500">
+              Optional — enables demographic fusion
+            </span>
+          </div>
+          <div class="nm-card-body">
+        """, unsafe_allow_html=True)
+
+        use_demo = st.toggle(
+            "Include demographic profile",
+            value = False,
+            key   = "use_demo",
+            help  = "When enabled, the classifier fuses RoBERTa predictions "
+                    "with your survey-trained demographic model."
+        )
+
+        if use_demo:
+            st.markdown("""
+            <div style="background:var(--purple-50);border:1px solid var(--purple-100);
+                        border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px">
+              <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+                          color:var(--purple-800);margin-bottom:10px;
+                          text-transform:uppercase;letter-spacing:.05em">
+                From Survey — About You
+              </div>
+            """, unsafe_allow_html=True)
+
+            d1, d2 = st.columns(2)
+
+            with d1:
+                st.markdown('<span class="field-label">Q1 — Gender</span>', unsafe_allow_html=True)
+                d_gender = st.selectbox("gender", GENDER_OPTIONS, key="d_gender")
+
+                st.markdown('<span class="field-label">Q2 — Age Range</span>', unsafe_allow_html=True)
+                d_age = st.selectbox("age", AGE_OPTIONS, index=1, key="d_age")
+
+                st.markdown('<span class="field-label">Q3 — District</span>', unsafe_allow_html=True)
+                d_dist = st.selectbox("dist", DISTRICTS, index=4, key="d_dist")
+
+            with d2:
+                st.markdown('<span class="field-label">Q4 — Occupation</span>', unsafe_allow_html=True)
+                d_occ = st.selectbox("occ", OCCUPATION_OPTIONS, key="d_occ")
+
+                st.markdown('<span class="field-label">Q5 — Monthly Spending</span>', unsafe_allow_html=True)
+                d_spend = st.selectbox("spend", SPENDING_OPTIONS, index=2, key="d_spend")
+
+                st.markdown('<span class="field-label">Q06 — Cultural Influence</span>', unsafe_allow_html=True)
+                d_cult = st.selectbox("cult", CULTURE_OPTIONS, index=1, key="d_cult")
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Product-level scores from Part 3
+            st.markdown("""
+            <div style="margin-top:12px;background:var(--purple-50);border:1px solid var(--purple-100);
+                        border-radius:var(--radius-md);padding:14px 16px">
+              <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+                          color:var(--purple-800);margin-bottom:10px;
+                          text-transform:uppercase;letter-spacing:.05em">
+                From Survey — Product Decisions (Part 3)
+              </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown(
+                '<span class="field-label">Average emotional appeal across 7 categories '
+                '(Q+3 average − 3, range −2 to +2)</span>',
+                unsafe_allow_html=True
+            )
+            d_appeal = st.slider(
+                "avg_appeal", -2.0, 2.0, 0.0, 0.5,
+                key  = "d_appeal",
+                help = "−2 = very rational across all categories, +2 = very emotional"
+            )
+
+            sc1, sc2, sc3 = st.columns(3)
+            with sc1:
+                st.markdown('<span class="field-label">Emotional reasons (0–7)</span>', unsafe_allow_html=True)
+                d_emo_r = st.number_input(
+                    " ", 0, 7, 2, key="d_emor",
+                    help='Count of categories where you chose "It makes me feel good or satisfied emotionally"'
+                )
+            with sc2:
+                st.markdown('<span class="field-label">Rational reasons (0–7)</span>', unsafe_allow_html=True)
+                d_rat_r = st.number_input(
+                    "  ", 0, 7, 2, key="d_ratr",
+                    help="Count of categories where you chose practical or best value reason"
+                )
+            with sc3:
+                st.markdown('<span class="field-label">Specs/reviews checked (0–21)</span>', unsafe_allow_html=True)
+                d_rat_c = st.number_input(
+                    "   ", 0, 21, 4, key="d_ratc",
+                    help="Total count of specifications/reviews checked across all 7 categories"
+                )
+
+            st.markdown('<span class="field-label" style="margin-top:8px;display:block">Appearance/design checks (0–7)</span>', unsafe_allow_html=True)
+            d_emo_c = st.number_input(
+                "    ", 0, 7, 2, key="d_emoc",
+                help="Count of categories where appearance or design was selected"
+            )
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("</div></div>", unsafe_allow_html=True)
+       
+
         analyze_btn = st.button(
             "Analyze & Generate Strategy ↗",
             type                = "primary",
@@ -312,7 +433,7 @@ if mode == "single":
             disabled            = not product_text.strip()
         )
 
-        # Example products
+        # ── Example products — unchanged ──────────────
         st.markdown("""
         <div class="nm-card" style="margin-top:16px">
           <div class="nm-card-header">
@@ -337,22 +458,42 @@ if mode == "single":
 
         st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # Pre-fill from example click
+    # Pre-fill from example click — unchanged
     if "ex_product" in st.session_state:
         product_text = st.session_state.pop("ex_product")
         category     = st.session_state.pop("ex_category", "Unknown")
         analyze_btn  = True
 
-    # ── RIGHT ─────────────────────────────────────────
+    #right
     with col_right:
 
         # Run analysis when button clicked
         if analyze_btn and product_text.strip():
             with st.spinner("Classifying cognitive mode and generating copy…"):
                 try:
+                    # Build payload
+                    payload = {
+                        "product_text": product_text,
+                        "category":     category
+                    }
+                    if use_demo:
+                        payload["demographics"] = {
+                            "gender":                  d_gender,
+                            "age_range":               d_age,
+                            "district":                d_dist,
+                            "occupation":              d_occ,
+                            "monthly_spending":        d_spend,
+                            "culture_influence":       d_cult,
+                            "avg_emotional_appeal":    float(d_appeal),
+                            "emotional_reason_count":  int(d_emo_r),
+                            "rational_reason_count":   int(d_rat_r),
+                            "rational_check_total":    int(d_rat_c),
+                            "emotional_check_total":   int(d_emo_c),
+                        }
+
                     response = requests.post(
                         f"{API_URL}/analyze",
-                        json    = {"product_text": product_text, "category": category},
+                        json    = payload,   # ← was hardcoded dict, now uses payload
                         timeout = 60
                     )
                     if response.status_code == 200:
@@ -381,22 +522,36 @@ if mode == "single":
             emo        = gen_copy["emotional"]
             rat        = gen_copy["rational"]
 
-            # Mode colors
+            # ── NEW: read classification_method for the badge ──
+            clf_method  = clf.get("classification_method", "product text only (RoBERTa)")
+            demo_used   = "fusion" in clf_method.lower()
+            method_pill = (
+                '<span style="font-size:10px;background:var(--purple-50);'
+                'color:var(--purple-800);border:1px solid var(--purple-100);'
+                'padding:2px 8px;border-radius:20px;font-weight:500;margin-left:6px">'
+                'Product + Demographic</span>'
+                if demo_used else ""
+            )
+
+            # Mode colors — unchanged
             if mode_val == "System1":
                 bg_c, bdr_c, txt_c, bar_c = "var(--amber-50)", "var(--amber-100)", "var(--amber-600)", "var(--amber-400)"
-                mode_icon, mode_label = "", "System 1 — Emotional / Impulsive"
+                mode_icon, mode_label = "⚡", "System 1 — Emotional / Impulsive"
             else:
                 bg_c, bdr_c, txt_c, bar_c = "var(--blue-50)", "var(--blue-100)", "var(--blue-600)", "var(--blue-600)"
-                mode_icon, mode_label = "", "System 2 — Rational / Deliberative"
+                mode_icon, mode_label = "🔍", "System 2 — Rational / Deliberative"
 
             # ── Classification result card ────────────
+            # Only change: header now shows method_pill + updated model badge
             st.markdown(f"""
             <div class="nm-card" style="animation:fadeUp .4s ease">
               <div class="nm-card-header">
-                <span class="nm-card-title">Classification Result</span>
+                <span class="nm-card-title">Classification Result {method_pill}</span>
                 <span style="font-size:10px;background:var(--teal-50);color:var(--teal-600);
                              border:1px solid var(--teal-100);padding:2px 8px;
-                             border-radius:20px;font-weight:500">RoBERTa</span>
+                             border-radius:20px;font-weight:500">
+                  {"RoBERTa + Demo" if demo_used else "RoBERTa"}
+                </span>
               </div>
               <div class="nm-card-body">
                 <div class="clf-badge" style="background:{bg_c};border-color:{bdr_c}">
@@ -418,7 +573,7 @@ if mode == "single":
             </div>
             """, unsafe_allow_html=True)
 
-            # ── Copy cards ────────────────────────────
+           #copy cards with strategy recommendation
             is_emo_rec = strategy == "emotional"
             is_rat_rec = strategy == "rational"
             emo_bdr    = "2px solid var(--amber-400)" if is_emo_rec else "1px solid var(--amber-100)"
@@ -480,7 +635,7 @@ if mode == "single":
             </div>
             """, unsafe_allow_html=True)
 
-            # ── JSON output ───────────────────────────
+            #json output and download
             st.markdown("""
             <div class="nm-card" style="animation:fadeUp .4s ease .2s both">
               <div class="nm-card-header">
@@ -529,9 +684,7 @@ if mode == "single":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
-# BATCH MODE
-# ════════════════════════════════════════════════════════
+#batch mode
 else:
     st.markdown('<div style="max-width:1280px;margin:0 auto;padding:0 40px;">', unsafe_allow_html=True)
 
@@ -613,7 +766,7 @@ else:
 
                     if rows:
                         st.markdown("""
-    k                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="nm-card">
+                        <div class="nm-card">
                           <div class="nm-card-header">
                             <span class="nm-card-title">Batch Results</span>
                           </div>
@@ -635,9 +788,7 @@ else:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════
-# FOOTER
-# ════════════════════════════════════════════════════════
+#footer
 st.markdown("""
 <div class="nm-footer">
   <p>NeuroMark AI · Final Year Research Demo · BSc Data Science</p>
