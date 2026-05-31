@@ -331,95 +331,63 @@ if mode == "single":
         """, unsafe_allow_html=True)
 
         use_demo = st.toggle(
-            "Include demographic profile",
+            "Include consumer profile",
             value = False,
             key   = "use_demo",
-            help  = "When enabled, the classifier fuses RoBERTa predictions "
-                    "with your survey-trained demographic model."
+            help  = "When enabled, the system personalises the "
+                    "classification based on the consumer's demographic profile."
         )
 
         if use_demo:
             st.markdown("""
             <div style="background:var(--purple-50);border:1px solid var(--purple-100);
-                        border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px">
+                        border-radius:var(--radius-md);padding:14px 16px;margin-bottom:4px">
               <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
-                          color:var(--purple-800);margin-bottom:10px;
+                          color:var(--purple-800);margin-bottom:12px;
                           text-transform:uppercase;letter-spacing:.05em">
-                From Survey — About You
+                Consumer Details
               </div>
             """, unsafe_allow_html=True)
 
             d1, d2 = st.columns(2)
 
             with d1:
-                st.markdown('<span class="field-label">Q1 — Gender</span>', unsafe_allow_html=True)
-                d_gender = st.selectbox("gender", GENDER_OPTIONS, key="d_gender")
+                st.markdown('<span class="field-label">Gender</span>',
+                            unsafe_allow_html=True)
+                d_gender = st.selectbox(
+                    "gender", GENDER_OPTIONS, key="d_gender"
+                )
 
-                st.markdown('<span class="field-label">Q2 — Age Range</span>', unsafe_allow_html=True)
-                d_age = st.selectbox("age", AGE_OPTIONS, index=1, key="d_age")
+                st.markdown('<span class="field-label">Age Range</span>',
+                            unsafe_allow_html=True)
+                d_age = st.selectbox(
+                    "age", AGE_OPTIONS, index=1, key="d_age"
+                )
 
-                st.markdown('<span class="field-label">Q3 — District</span>', unsafe_allow_html=True)
-                d_dist = st.selectbox("dist", DISTRICTS, index=4, key="d_dist")
+                st.markdown('<span class="field-label">District</span>',
+                            unsafe_allow_html=True)
+                d_dist = st.selectbox(
+                    "dist", DISTRICTS, index=4, key="d_dist"
+                )
 
             with d2:
-                st.markdown('<span class="field-label">Q4 — Occupation</span>', unsafe_allow_html=True)
-                d_occ = st.selectbox("occ", OCCUPATION_OPTIONS, key="d_occ")
-
-                st.markdown('<span class="field-label">Q5 — Monthly Spending</span>', unsafe_allow_html=True)
-                d_spend = st.selectbox("spend", SPENDING_OPTIONS, index=2, key="d_spend")
-
-                st.markdown('<span class="field-label">Q06 — Cultural Influence</span>', unsafe_allow_html=True)
-                d_cult = st.selectbox("cult", CULTURE_OPTIONS, index=1, key="d_cult")
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # Product-level scores from Part 3
-            st.markdown("""
-            <div style="margin-top:12px;background:var(--purple-50);border:1px solid var(--purple-100);
-                        border-radius:var(--radius-md);padding:14px 16px">
-              <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
-                          color:var(--purple-800);margin-bottom:10px;
-                          text-transform:uppercase;letter-spacing:.05em">
-                From Survey — Product Decisions (Part 3)
-              </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown(
-                '<span class="field-label">Average emotional appeal across 7 categories '
-                '(Q+3 average − 3, range −2 to +2)</span>',
-                unsafe_allow_html=True
-            )
-            d_appeal = st.slider(
-                "avg_appeal", -2.0, 2.0, 0.0, 0.5,
-                key  = "d_appeal",
-                help = "−2 = very rational across all categories, +2 = very emotional"
-            )
-
-            sc1, sc2, sc3 = st.columns(3)
-            with sc1:
-                st.markdown('<span class="field-label">Emotional reasons (0–7)</span>', unsafe_allow_html=True)
-                d_emo_r = st.number_input(
-                    " ", 0, 7, 2, key="d_emor",
-                    help='Count of categories where you chose "It makes me feel good or satisfied emotionally"'
-                )
-            with sc2:
-                st.markdown('<span class="field-label">Rational reasons (0–7)</span>', unsafe_allow_html=True)
-                d_rat_r = st.number_input(
-                    "  ", 0, 7, 2, key="d_ratr",
-                    help="Count of categories where you chose practical or best value reason"
-                )
-            with sc3:
-                st.markdown('<span class="field-label">Specs/reviews checked (0–21)</span>', unsafe_allow_html=True)
-                d_rat_c = st.number_input(
-                    "   ", 0, 21, 4, key="d_ratc",
-                    help="Total count of specifications/reviews checked across all 7 categories"
+                st.markdown('<span class="field-label">Occupation</span>',
+                            unsafe_allow_html=True)
+                d_occ = st.selectbox(
+                    "occ", OCCUPATION_OPTIONS, key="d_occ"
                 )
 
-            st.markdown('<span class="field-label" style="margin-top:8px;display:block">Appearance/design checks (0–7)</span>', unsafe_allow_html=True)
-            d_emo_c = st.number_input(
-                "    ", 0, 7, 2, key="d_emoc",
-                help="Count of categories where appearance or design was selected"
-            )
+                st.markdown('<span class="field-label">Monthly Spending</span>',
+                            unsafe_allow_html=True)
+                d_spend = st.selectbox(
+                    "spend", SPENDING_OPTIONS, index=2, key="d_spend"
+                )
+
+                st.markdown('<span class="field-label">Cultural Influence</span>',
+                            unsafe_allow_html=True)
+                d_cult = st.selectbox(
+                    "cult", CULTURE_OPTIONS, index=1, key="d_cult"
+                )
 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -443,11 +411,11 @@ if mode == "single":
         """, unsafe_allow_html=True)
 
         examples = [
-            ("Neutrogena Hydro Boost Water Gel Moisturizer", "Beauty"),
-            ("Sony WH-1000XM5 Noise Cancelling Headphones",  "Electronics"),
-            ("Haribo Gold-Bears Gummy Candy 5lb Party Bag",  "Grocery"),
-            ("Garmin Forerunner 955 Solar GPS Smartwatch",   "Sports"),
-            ("Fisher-Price Laugh & Learn Baby Toy Gift Set", "Baby"),
+            ("Maliban Chocolate Cream Biscuits crispy sweet snack pack of 3 family size", "Grocery"),
+            ("Abans 55 inch 4K Smart LED TV Android WiFi Bluetooth HDR Dolby Audio",  "Electronics"),
+            ("Samsung Galaxy A55 5G smartphone 128GB 8GB RAM 50MP camera dual SIM Sri Lanka",  "Electronics"),
+            ("Hameedia Men Formal Shirt slim fit 100 cotton office wear Sri Lankan brand",   "Apparel"),
+            ("Spa Ceylon Ayurveda Lavender Neem Body Lotion luxury herbal natural moisturizer 200ml", "Beauty"),
         ]
 
         for ex_product, ex_cat in examples:
@@ -478,17 +446,20 @@ if mode == "single":
                     }
                     if use_demo:
                         payload["demographics"] = {
-                            "gender":                  d_gender,
-                            "age_range":               d_age,
-                            "district":                d_dist,
-                            "occupation":              d_occ,
-                            "monthly_spending":        d_spend,
-                            "culture_influence":       d_cult,
-                            "avg_emotional_appeal":    float(d_appeal),
-                            "emotional_reason_count":  int(d_emo_r),
-                            "rational_reason_count":   int(d_rat_r),
-                            "rational_check_total":    int(d_rat_c),
-                            "emotional_check_total":   int(d_emo_c),
+                            "gender":           d_gender,
+                            "age_range":        d_age,
+                            "district":         d_dist,
+                            "occupation":       d_occ,
+                            "monthly_spending": d_spend,
+                            "culture_influence":d_cult,
+                            # Product decision scores set to neutral defaults.
+                            # The RoBERTa product model handles product signals.
+                            # These are only overridden if bulk survey data is loaded.
+                            "avg_emotional_appeal":    0.0,
+                            "emotional_reason_count":  0,
+                            "rational_reason_count":   0,
+                            "rational_check_total":    0,
+                            "emotional_check_total":   0,
                         }
 
                     response = requests.post(
@@ -619,21 +590,21 @@ if mode == "single":
                 </div>
                 <div class="metrics-row">
                   <div class="metric-box">
-                    <div class="metric-val">{confidence*100:.0f}%</div>
+                    <div class="metric-val">{confidence*100:.0f}%</div> 
                     <div class="metric-lbl">Confidence</div>
                   </div>
                   <div class="metric-box">
-                    <div class="metric-val">{emo["quality"]["word_count"]}</div>
-                    <div class="metric-lbl">Emotional Words</div>
+                    <div class="metric-val">{emo["quality"]["mode_alignment"]*100:.0f}%</div>
+                    <div class="metric-lbl">Emo. Alignment</div>
                   </div>
                   <div class="metric-box">
-                    <div class="metric-val">{rat["quality"]["word_count"]}</div>
-                    <div class="metric-lbl">Rational Words</div>
+                    <div class="metric-val">{rat["quality"]["mode_alignment"]*100:.0f}%</div>
+                    <div class="metric-lbl">Rat. Alignment</div>
                   </div>
                 </div>
               </div>
             </div>
-            """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True) #temperature scaling with a value of 3.0 to calibrate
 
             #json output and download
             st.markdown("""
