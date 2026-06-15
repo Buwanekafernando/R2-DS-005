@@ -321,77 +321,53 @@ if mode == "single":
         <div class="nm-card">
           <div class="nm-card-header">
             <span class="nm-card-title">Consumer Profile</span>
-            <span style="font-size:10px;background:var(--purple-50);color:var(--purple-800);
-                         border:1px solid var(--purple-100);padding:2px 8px;
+            <span style="font-size:10px;background:var(--teal-50);color:var(--teal-600);
+                         border:1px solid var(--teal-100);padding:2px 8px;
                          border-radius:20px;font-weight:500">
-              Optional — enables demographic fusion
+              Required
             </span>
           </div>
           <div class="nm-card-body">
-        """, unsafe_allow_html=True)
-
-        use_demo = st.toggle(
-            "Include consumer profile",
-            value = False,
-            key   = "use_demo",
-            help  = "When enabled, the system personalises the "
-                    "classification based on the consumer's demographic profile."
-        )
-
-        if use_demo:
-            st.markdown("""
             <div style="background:var(--purple-50);border:1px solid var(--purple-100);
-                        border-radius:var(--radius-md);padding:14px 16px;margin-bottom:4px">
+                        border-radius:var(--radius-md);padding:14px 16px">
               <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
                           color:var(--purple-800);margin-bottom:12px;
                           text-transform:uppercase;letter-spacing:.05em">
                 Consumer Details
               </div>
-            """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-            d1, d2 = st.columns(2)
+        d1, d2 = st.columns(2)
 
-            with d1:
-                st.markdown('<span class="field-label">Gender</span>',
-                            unsafe_allow_html=True)
-                d_gender = st.selectbox(
-                    "gender", GENDER_OPTIONS, key="d_gender"
-                )
+        with d1:
+            st.markdown('<span class="field-label">Gender</span>',
+                        unsafe_allow_html=True)
+            d_gender = st.selectbox("gender", GENDER_OPTIONS, key="d_gender")
 
-                st.markdown('<span class="field-label">Age Range</span>',
-                            unsafe_allow_html=True)
-                d_age = st.selectbox(
-                    "age", AGE_OPTIONS, index=1, key="d_age"
-                )
+            st.markdown('<span class="field-label">Age Range</span>',
+                        unsafe_allow_html=True)
+            d_age = st.selectbox("age", AGE_OPTIONS, index=1, key="d_age")
 
-                st.markdown('<span class="field-label">District</span>',
-                            unsafe_allow_html=True)
-                d_dist = st.selectbox(
-                    "dist", DISTRICTS, index=4, key="d_dist"
-                )
+            st.markdown('<span class="field-label">District</span>',
+                        unsafe_allow_html=True)
+            d_dist = st.selectbox("dist", DISTRICTS, index=4, key="d_dist")
 
-            with d2:
-                st.markdown('<span class="field-label">Occupation</span>',
-                            unsafe_allow_html=True)
-                d_occ = st.selectbox(
-                    "occ", OCCUPATION_OPTIONS, key="d_occ"
-                )
+        with d2:
+            st.markdown('<span class="field-label">Occupation</span>',
+                        unsafe_allow_html=True)
+            d_occ = st.selectbox("occ", OCCUPATION_OPTIONS, key="d_occ")
 
-                st.markdown('<span class="field-label">Monthly Spending</span>',
-                            unsafe_allow_html=True)
-                d_spend = st.selectbox(
-                    "spend", SPENDING_OPTIONS, index=2, key="d_spend"
-                )
+            st.markdown('<span class="field-label">Monthly Spending</span>',
+                        unsafe_allow_html=True)
+            d_spend = st.selectbox("spend", SPENDING_OPTIONS, index=2,
+                                   key="d_spend")
 
-                st.markdown('<span class="field-label">Cultural Influence</span>',
-                            unsafe_allow_html=True)
-                d_cult = st.selectbox(
-                    "cult", CULTURE_OPTIONS, index=1, key="d_cult"
-                )
+            st.markdown('<span class="field-label">Cultural Influence</span>',
+                        unsafe_allow_html=True)
+            d_cult = st.selectbox("cult", CULTURE_OPTIONS, index=1,
+                                  key="d_cult")
 
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.markdown("</div></div></div>", unsafe_allow_html=True)
        
 
         analyze_btn = st.button(
@@ -439,32 +415,28 @@ if mode == "single":
         if analyze_btn and product_text.strip():
             with st.spinner("Classifying cognitive mode and generating copy…"):
                 try:
-                    # Build payload
+                    # Demographics always included
                     payload = {
                         "product_text": product_text,
-                        "category":     category
-                    }
-                    if use_demo:
-                        payload["demographics"] = {
-                            "gender":           d_gender,
-                            "age_range":        d_age,
-                            "district":         d_dist,
-                            "occupation":       d_occ,
-                            "monthly_spending": d_spend,
-                            "culture_influence":d_cult,
-                            # Product decision scores set to neutral defaults.
-                            # The RoBERTa product model handles product signals.
-                            # These are only overridden if bulk survey data is loaded.
+                        "category":     category,
+                        "demographics": {
+                            "gender":                  d_gender,
+                            "age_range":               d_age,
+                            "district":                d_dist,
+                            "occupation":              d_occ,
+                            "monthly_spending":        d_spend,
+                            "culture_influence":       d_cult,
                             "avg_emotional_appeal":    0.0,
                             "emotional_reason_count":  0,
                             "rational_reason_count":   0,
                             "rational_check_total":    0,
                             "emotional_check_total":   0,
                         }
+                    }
 
                     response = requests.post(
                         f"{API_URL}/analyze",
-                        json    = payload,   # ← was hardcoded dict, now uses payload
+                        json    = payload,
                         timeout = 60
                     )
                     if response.status_code == 200:
@@ -494,14 +466,14 @@ if mode == "single":
             rat        = gen_copy["rational"]
 
             # ── NEW: read classification_method for the badge ──
-            clf_method  = clf.get("classification_method", "product text only (RoBERTa)")
-            demo_used   = "fusion" in clf_method.lower()
+            clf_method  = clf.get("classification_method",
+                                  "product + demographic fusion")
+            demo_used   = True
             method_pill = (
                 '<span style="font-size:10px;background:var(--purple-50);'
                 'color:var(--purple-800);border:1px solid var(--purple-100);'
                 'padding:2px 8px;border-radius:20px;font-weight:500;margin-left:6px">'
                 'Product + Demographic</span>'
-                if demo_used else ""
             )
 
             # Mode colors — unchanged

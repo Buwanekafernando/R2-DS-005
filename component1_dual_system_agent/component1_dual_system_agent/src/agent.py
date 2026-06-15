@@ -183,11 +183,13 @@ class DualSystemAgent:
             return_tensors="pt"
         ).to(self.device)
 
-        # ── Your original RoBERTa inference (unchanged) ───
+        #decides System 1 or System 2
+        TEMPERATURE = 3.0
         with torch.no_grad():
-            outputs = self.model(**encoding)
-            probs   = torch.softmax(outputs.logits, dim=1)
-            pred    = torch.argmax(probs, dim=1).item()
+            outputs        = self.model(**encoding)
+            scaled_logits  = outputs.logits / TEMPERATURE     # ← scale here
+            probs          = torch.softmax(scaled_logits, dim=1)
+            pred           = torch.argmax(probs, dim=1).item()
 
         s2_prob    = round(probs[0][0].item(), 4)
         s1_prob    = round(probs[0][1].item(), 4)
@@ -224,13 +226,14 @@ class DualSystemAgent:
                 fused   = self.meta_model.predict_proba(combined)[0]
                 s2_prob = round(float(fused[0]), 4)
                 s1_prob = round(float(fused[1]), 4)
+                # final prediction after fusion
                 pred    = 1 if s1_prob > s2_prob else 0
 
                 classification_method = "product + demographic fusion"
 
             except Exception as e:
                 print(f"  Demographic fusion error: {e}. Using RoBERTa only.")
-                # Fall back to original RoBERTa values (already set above)
+                # Fall back to original RoBERTa values 
 
         confidence = max(s1_prob, s2_prob)
         mode       = "System1" if pred == 1 else "System2"
@@ -270,31 +273,60 @@ class DualSystemAgent:
         """Score how well generated copy matches the intended mode"""
 
         words      = text.lower().split()
+        word_count = len(words)
         sentiment  = self.sia.polarity_scores(text)
 
-        s1_markers = ['feel', 'love', 'amazing', 'perfect', 'beautiful',
-                      'enjoy', 'experience', 'dream', 'wonderful', '!']
-        s2_markers = ['features', 'performance', 'quality', 'reliable',
-                      'efficient', 'proven', 'compare', 'specifications',
-                      'battery', 'compatible', 'warranty', 'technology']
+        s1_markers = [
+            'feel', 'love', 'amazing', 'perfect', 'beautiful',
+            'enjoy', 'experience', 'dream', 'wonderful', 'excitement',
+            'thrill', 'passion', 'joy', 'happy', 'delight', 'pleasure',
+            'desire', 'heart', 'bliss', 'glow', 'spark', 'vibrant',
+            'rush', 'belong', 'irresistible', 'sensory', 'alive',
+            'magic', 'effortless', 'captivating', 'indulge', '!'
+        ]
+        s2_markers = [
+            'features', 'performance', 'quality', 'reliable', 'efficient',
+            'proven', 'compare', 'specifications', 'battery', 'compatible',
+            'warranty', 'technology', 'capacity', 'resolution', 'processor',
+            'storage', 'ram', 'sensor', 'connectivity', 'network',
+            'bandwidth', 'measurable', 'multitasking', 'data', 'technical',
+            'precision', 'sustain', 'simultaneous', 'documented', 'value',
+            'durable', 'certified', 'tested', 'benchmark', 'optimized'
+        ]
+        s1_hits    = sum(1 for w in s1_markers if w in words)
+        s2_hits    = sum(1 for w in s2_markers if w in words)
+        total_hits = s1_hits + s2_hits
 
-        s1_hits = sum(1 for w in s1_markers if w in words)
-        s2_hits = sum(1 for w in s2_markers if w in words)
-
-        if expected_mode == "emotional":
-            alignment = min(
-                s1_hits / max(s1_hits + s2_hits, 1), 1.0
-            )
+        if total_hits == 0:
+            ratio_score = 0.3   # neutral — no keywords found at all
+        elif expected_mode == "emotional":
+            ratio_score = s1_hits / total_hits
         else:
-            alignment = min(
-                s2_hits / max(s1_hits + s2_hits, 1), 1.0
-            )
+            ratio_score = s2_hits / total_hits
+            
+        
+        DENSITY_TARGET = 2.0
+        if expected_mode == "emotional":
+            density_score = min(
+                (s1_hits / max(word_count / 10.0, 1)) / DENSITY_TARGET,
+                1.0
+        )
+        else:
+            density_score = min(
+                (s2_hits / max(word_count / 10.0, 1)) / DENSITY_TARGET,
+                1.0
+        )
+        alignment = (ratio_score * 0.60) + (density_score * 0.40)
+        alignment = min(round(alignment, 4), 0.95)
+        
 
         return {
             "sentiment_compound": round(sentiment["compound"], 4),
             "sentiment_positive": round(sentiment["pos"], 4),
-            "word_count":         len(words),
-            "mode_alignment":     round(alignment, 4),
+            "word_count":         word_count,
+            "mode_alignment":     alignment,
+            "s1_keyword_hits":    s1_hits,     # useful for debugging
+            "s2_keyword_hits":    s2_hits,
         }
 
   
