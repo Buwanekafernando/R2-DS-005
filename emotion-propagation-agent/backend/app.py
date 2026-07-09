@@ -5,21 +5,25 @@ import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from utils import model_loader
 from utils.emotion_agent import (
-    VALID_PRODUCT_CATEGORIES,
-    VALID_TARGET_EMOTIONS,
-    generate_full_strategy,
+    PRODUCT_CATEGORIES,
+    PROJECT_EMOTIONS,
+    build_marketing_prompt,
+    generate_with_ollama,
+    get_visual_suggestions,
+    select_emotion_for_category,
 )
-from utils.model_loader import load_emotion_model, predict_emotions
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}})
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:5174"]}})
 
-MODEL_BUNDLE = load_emotion_model()
+model_loader.load_emotion_model()
 
 OUTPUTS_DIR = os.path.join(os.path.dirname(__file__), "outputs")
 USER_STUDY_CSV = os.path.join(OUTPUTS_DIR, "user_study_responses.csv")
+MAX_ATTEMPTS = 3
 
 
 def _json_error(message: str, status_code: int = 400):
@@ -32,121 +36,213 @@ def _get_json():
 
 def _is_valid_scale(value):
     try:
-        v = int(value)
-        return 1 <= v <= 5
+        numeric_value = int(value)
+        return 1 <= numeric_value <= 5
     except Exception:
         return False
 
 
+def _normalize_generation_payload(payload: dict) -> dict:
+    category = payload.get("category", payload.get("product_category", ""))
+    features = payload.get("features", payload.get("key_features", ""))
+
+    if isinstance(features, (list, tuple)):
+        features = ", ".join(str(item).strip() for item in features if str(item).strip())
+
+    return {
+        "product_name": str(payload.get("product_name", "")).strip(),
+        "category": str(category or "").strip().title(),
+        "target_audience": str(payload.get("target_audience", "")).strip(),
+        "features": str(features or "").strip(),
+        "target_emotion": str(payload.get("target_emotion", "")).strip().lower(),
+    }
+
+
+def _build_generation_result(data: dict, target_emotion: str) -> dict:
+    previous_failure = None
+    attempt_history = []
+    final_message = ""
+    final_predictions = []
+    final_top_emotion = None
+    final_warning = model_loader.MODEL_WARNING
+    validation_success = False
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        prompt = build_marketing_prompt(
+            product_name=data["product_name"],
+            category=data["category"],
+            target_audience=data["target_audience"],
+            features=data["features"],
+            target_emotion=target_emotion,
+            previous_failure=previous_failure,
+        )
+        generated_message = generate_with_ollama(prompt)
+        validation = model_loader.predict_emotions(generated_message, top_k=5)
+
+        predictions = validation.get("predictions", [])
+        top_emotion = validation.get("top_emotion")
+        warning = validation.get("warning")
+        matched = bool(model_loader.MODEL_LOADED and top_emotion == target_emotion)
+
+        attempt_history.append(
+            {
+                "attempt": attempt,
+                "generated_message": generated_message,
+                "top_emotion": top_emotion,
+                "matched": matched,
+                "predictions": predictions,
+            }
+        )
+
+        final_message = generated_message
+        final_predictions = predictions
+        final_top_emotion = top_emotion
+        final_warning = warning
+        validation_success = matched
+
+        if matched:
+            break
+
+        previous_failure = top_emotion
+        if not model_loader.MODEL_LOADED:
+            break
+
+    response = {
+        "product_name": data["product_name"],
+        "category": data["category"],
+        "target_audience": data["target_audience"],
+        "features": data["features"],
+        "target_emotion": target_emotion,
+        "generated_message": final_message,
+        "emotion_predictions": final_predictions,
+        "top_emotion": final_top_emotion,
+        "validation_success": validation_success,
+        "attempts_used": len(attempt_history),
+        "max_attempts": MAX_ATTEMPTS,
+        "attempt_history": attempt_history,
+        "cta": get_visual_suggestions(target_emotion)["cta"],
+        "visual_suggestions": get_visual_suggestions(target_emotion),
+    }
+
+    if final_warning:
+        response["warning"] = final_warning
+
+    return response
+
+
 @app.get("/")
 def root():
-    return jsonify({"message": "Emotion Propagation Agent API is running", "component": "Component 2", "status": "active"})
+    return jsonify(
+        {
+            "message": "Emotion Propagation Agent API is running",
+            "component": "Component 2",
+            "model": "RoBERTa emotion classifier",
+            "generation": "LLM-based generation with validation loop",
+            "status": "active",
+        }
+    )
 
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "healthy", "model_loaded": bool(MODEL_BUNDLE.loaded)})
+    return jsonify(
+        {
+            "status": "healthy",
+            "model_loaded": model_loader.MODEL_LOADED,
+            "model_warning": model_loader.MODEL_WARNING,
+            "allowed_categories": PRODUCT_CATEGORIES,
+            "allowed_emotions": PROJECT_EMOTIONS,
+        }
+    )
 
 
 @app.post("/api/reload-model")
 def api_reload_model():
-    global MODEL_BUNDLE
-    MODEL_BUNDLE = load_emotion_model()
-    return jsonify({"message": "Model reloaded", "model_loaded": bool(MODEL_BUNDLE.loaded), "warning": MODEL_BUNDLE.warning})
+    bundle = model_loader.load_emotion_model()
+    return jsonify({"message": "Model reloaded", "model_loaded": bundle.loaded, "warning": bundle.warning})
 
 
 @app.post("/api/predict-emotion")
 def api_predict_emotion():
     payload = _get_json()
-    text = payload.get("text")
-    if not text or not str(text).strip():
+    text = str(payload.get("text", "")).strip()
+    if not text:
         return _json_error("Missing required field: text", 400)
 
-    if not MODEL_BUNDLE.loaded:
-        return jsonify(
-            {
-                "text": str(text),
-                "predictions": [],
-                "warning": MODEL_BUNDLE.warning or "Model not loaded.",
-            }
-        )
-
-    try:
-        predictions = predict_emotions(str(text), top_k=5)
-        return jsonify({"text": str(text), "predictions": predictions})
-    except Exception:
-        return _json_error("Prediction failed.", 500)
+    result = model_loader.predict_emotions(text, top_k=5)
+    return jsonify({"text": text, **result})
 
 
 @app.post("/api/generate-message")
 def api_generate_message():
-    payload = _get_json()
-    required = ["product_name", "product_category", "target_audience", "key_features", "target_emotion"]
-    missing = [k for k in required if k not in payload]
-    if missing:
-        return _json_error(f"Missing required fields: {', '.join(missing)}", 400)
+    data = _normalize_generation_payload(_get_json())
+    if not data["product_name"]:
+        return _json_error("Missing required field: product_name", 400)
+    if not data["category"]:
+        return _json_error("Missing required field: category", 400)
+    if data["category"] not in PRODUCT_CATEGORIES:
+        return _json_error(f"Invalid category. Allowed: {', '.join(PRODUCT_CATEGORIES)}", 400)
 
-    product_category = str(payload.get("product_category", "general")).strip().lower()
-    if product_category not in VALID_PRODUCT_CATEGORIES:
-        return _json_error(f"Invalid product_category. Allowed: {', '.join(VALID_PRODUCT_CATEGORIES)}", 400)
+    target_emotion = data["target_emotion"] or select_emotion_for_category(data["category"])
+    if target_emotion not in PROJECT_EMOTIONS:
+        return _json_error(f"Invalid target_emotion. Allowed: {', '.join(PROJECT_EMOTIONS)}", 400)
 
-    target_emotion = str(payload.get("target_emotion", "neutral")).strip().lower()
-    if target_emotion not in VALID_TARGET_EMOTIONS:
-        return _json_error(f"Invalid target_emotion. Allowed: {', '.join(VALID_TARGET_EMOTIONS)}", 400)
-
-    strategy = generate_full_strategy(payload)
-    generated_message = strategy.get("generated_message", "")
-
-    if MODEL_BUNDLE.loaded:
-        predictions = predict_emotions(generated_message, top_k=5)
-        strategy["emotion_predictions"] = predictions
-    else:
-        strategy["emotion_predictions"] = []
-        strategy["warning"] = MODEL_BUNDLE.warning or "Model not loaded."
-
-    return jsonify(strategy)
+    try:
+        result = _build_generation_result(data, target_emotion)
+        return jsonify(result)
+    except RuntimeError as exc:
+        return _json_error(str(exc), 503)
+    except Exception as exc:
+        return _json_error(f"Failed to generate content: {exc}", 500)
 
 
 @app.post("/api/generate-variations")
 def api_generate_variations():
+    data = _normalize_generation_payload(_get_json())
+    if not data["product_name"]:
+        return _json_error("Missing required field: product_name", 400)
+    if not data["category"]:
+        return _json_error("Missing required field: category", 400)
+    if data["category"] not in PRODUCT_CATEGORIES:
+        return _json_error(f"Invalid category. Allowed: {', '.join(PRODUCT_CATEGORIES)}", 400)
+
     payload = _get_json()
-    required = ["product_name", "product_category", "target_audience", "key_features", "target_emotions"]
-    missing = [k for k in required if k not in payload]
-    if missing:
-        return _json_error(f"Missing required fields: {', '.join(missing)}", 400)
-
-    product_category = str(payload.get("product_category", "general")).strip().lower()
-    if product_category not in VALID_PRODUCT_CATEGORIES:
-        return _json_error(f"Invalid product_category. Allowed: {', '.join(VALID_PRODUCT_CATEGORIES)}", 400)
-
     target_emotions = payload.get("target_emotions") or []
     if not isinstance(target_emotions, list) or not target_emotions:
         return _json_error("target_emotions must be a non-empty list.", 400)
 
-    normalized = []
-    for e in target_emotions:
-        e_norm = str(e).strip().lower()
-        if e_norm in VALID_TARGET_EMOTIONS and e_norm not in normalized:
-            normalized.append(e_norm)
+    normalized_emotions = []
+    for emotion in target_emotions:
+        emotion_key = str(emotion).strip().lower()
+        if emotion_key in PROJECT_EMOTIONS and emotion_key not in normalized_emotions:
+            normalized_emotions.append(emotion_key)
 
-    if not normalized:
-        return _json_error(f"No valid target_emotions provided. Allowed: {', '.join(VALID_TARGET_EMOTIONS)}", 400)
+    if not normalized_emotions:
+        return _json_error(f"No valid target_emotions provided. Allowed: {', '.join(PROJECT_EMOTIONS)}", 400)
 
     variations = []
-    for emotion in normalized:
-        variant_payload = dict(payload)
-        variant_payload["target_emotion"] = emotion
-        strategy = generate_full_strategy(variant_payload)
-        generated_message = strategy.get("generated_message", "")
-        item = {"target_emotion": emotion, "generated_message": generated_message, "cta": strategy.get("cta"), "tone": strategy.get("tone")}
-
-        if MODEL_BUNDLE.loaded:
-            item["emotion_predictions"] = predict_emotions(generated_message, top_k=5)
-        else:
-            item["emotion_predictions"] = []
-            item["warning"] = MODEL_BUNDLE.warning or "Model not loaded."
-
-        variations.append(item)
+    try:
+        for emotion in normalized_emotions:
+            result = _build_generation_result(data, emotion)
+            variations.append(
+                {
+                    "target_emotion": emotion,
+                    "generated_message": result["generated_message"],
+                    "top_emotion": result["top_emotion"],
+                    "validation_success": result["validation_success"],
+                    "attempts_used": result["attempts_used"],
+                    "max_attempts": result["max_attempts"],
+                    "emotion_predictions": result["emotion_predictions"],
+                    "attempt_history": result["attempt_history"],
+                    "cta": result["cta"],
+                    "visual_suggestions": result["visual_suggestions"],
+                    "warning": result.get("warning"),
+                }
+            )
+    except RuntimeError as exc:
+        return _json_error(str(exc), 503)
+    except Exception as exc:
+        return _json_error(f"Failed to generate variations: {exc}", 500)
 
     return jsonify({"variations": variations})
 
@@ -168,7 +264,7 @@ def api_user_study():
         "purchase_interest",
         "comments",
     ]
-    missing = [k for k in required if k not in payload]
+    missing = [field for field in required if field not in payload]
     if missing:
         return _json_error(f"Missing required fields: {', '.join(missing)}", 400)
 
@@ -180,7 +276,7 @@ def api_user_study():
         "engagement_interest",
         "purchase_interest",
     ]
-    invalid_scales = [f for f in scale_fields if not _is_valid_scale(payload.get(f))]
+    invalid_scales = [field for field in scale_fields if not _is_valid_scale(payload.get(field))]
     if invalid_scales:
         return _json_error(f"Invalid rating(s). Must be 1-5: {', '.join(invalid_scales)}", 400)
 
@@ -206,15 +302,48 @@ def api_user_study():
 @app.get("/api/user-study-summary")
 def api_user_study_summary():
     if not os.path.exists(USER_STUDY_CSV):
-        return jsonify({"total_responses": 0, "best_emotion": None, "summary": []})
+        return jsonify(
+            {
+                "total_responses": 0,
+                "best_emotion": None,
+                "summary": [],
+                "average_attempts_used": None,
+                "validation_success_rate": None,
+            }
+        )
 
     df = pd.read_csv(USER_STUDY_CSV)
     if df.empty or "target_emotion" not in df.columns:
-        return jsonify({"total_responses": 0, "best_emotion": None, "summary": []})
+        return jsonify(
+            {
+                "total_responses": 0,
+                "best_emotion": None,
+                "summary": [],
+                "average_attempts_used": None,
+                "validation_success_rate": None,
+            }
+        )
 
-    for col in ["emotion_strength", "persuasiveness", "engagement_interest", "trustworthiness"]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    numeric_columns = [
+        "emotion_strength",
+        "persuasiveness",
+        "engagement_interest",
+        "trustworthiness",
+        "attempts_used",
+    ]
+    for column in numeric_columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    if "validation_success" in df.columns:
+        df["validation_success_numeric"] = (
+            df["validation_success"]
+            .astype(str)
+            .str.lower()
+            .map({"true": 1.0, "false": 0.0, "1": 1.0, "0": 0.0})
+        )
+    else:
+        df["validation_success_numeric"] = pd.NA
 
     grouped = (
         df.groupby("target_emotion", dropna=False)
@@ -223,6 +352,8 @@ def api_user_study_summary():
             average_persuasiveness=("persuasiveness", "mean"),
             average_engagement_interest=("engagement_interest", "mean"),
             average_trustworthiness=("trustworthiness", "mean"),
+            average_attempts_used=("attempts_used", "mean"),
+            validation_success_rate=("validation_success_numeric", "mean"),
         )
         .reset_index()
     )
@@ -236,6 +367,8 @@ def api_user_study_summary():
                 "average_persuasiveness": round(float(row["average_persuasiveness"]), 4) if pd.notna(row["average_persuasiveness"]) else None,
                 "average_engagement_interest": round(float(row["average_engagement_interest"]), 4) if pd.notna(row["average_engagement_interest"]) else None,
                 "average_trustworthiness": round(float(row["average_trustworthiness"]), 4) if pd.notna(row["average_trustworthiness"]) else None,
+                "average_attempts_used": round(float(row["average_attempts_used"]), 4) if pd.notna(row["average_attempts_used"]) else None,
+                "validation_success_rate": round(float(row["validation_success_rate"]), 4) if pd.notna(row["validation_success_rate"]) else None,
             }
         )
 
@@ -244,7 +377,23 @@ def api_user_study_summary():
         grouped_sorted = grouped.sort_values(["average_engagement_interest", "average_persuasiveness"], ascending=False)
         best_emotion = str(grouped_sorted.iloc[0]["target_emotion"])
 
-    return jsonify({"total_responses": int(len(df)), "best_emotion": best_emotion, "summary": summary})
+    average_attempts_used = None
+    if "attempts_used" in df.columns and df["attempts_used"].notna().any():
+        average_attempts_used = round(float(df["attempts_used"].mean()), 4)
+
+    validation_success_rate = None
+    if df["validation_success_numeric"].notna().any():
+        validation_success_rate = round(float(df["validation_success_numeric"].mean()), 4)
+
+    return jsonify(
+        {
+            "total_responses": int(len(df)),
+            "best_emotion": best_emotion,
+            "summary": summary,
+            "average_attempts_used": average_attempts_used,
+            "validation_success_rate": validation_success_rate,
+        }
+    )
 
 
 @app.get("/api/user-study-responses")
