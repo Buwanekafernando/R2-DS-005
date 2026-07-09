@@ -1,6 +1,7 @@
 flask
 flask-cors
-pandas
+torch
+transformers
+requests
 numpy
-scikit-learn
-joblib
+pandas
