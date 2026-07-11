@@ -5,12 +5,20 @@ import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+# Load GROQ_API_KEY (and anything else) from a .env file if python-dotenv is installed.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from utils import model_loader
 from utils.emotion_agent import (
     PRODUCT_CATEGORIES,
     PROJECT_EMOTIONS,
     build_marketing_prompt,
-    generate_with_ollama,
+    generate_with_groq,
     get_visual_suggestions,
     select_emotion_for_category,
 )
@@ -24,6 +32,9 @@ model_loader.load_emotion_model()
 OUTPUTS_DIR = os.path.join(os.path.dirname(__file__), "outputs")
 USER_STUDY_CSV = os.path.join(OUTPUTS_DIR, "user_study_responses.csv")
 MAX_ATTEMPTS = 3
+# A generation counts as a match if the target emotion lands within the top-K
+# predictions (not only #1). Set to 1 for strict top-1 matching, 2 or 3 to relax.
+MATCH_TOP_K = 2
 
 
 def _json_error(message: str, status_code: int = 400):
@@ -76,13 +87,23 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
             target_emotion=target_emotion,
             previous_failure=previous_failure,
         )
-        generated_message = generate_with_ollama(prompt)
+        generated_message = generate_with_groq(prompt)
         validation = model_loader.predict_emotions(generated_message, top_k=5)
 
         predictions = validation.get("predictions", [])
         top_emotion = validation.get("top_emotion")
         warning = validation.get("warning")
-        matched = bool(model_loader.MODEL_LOADED and top_emotion == target_emotion)
+
+        # Where does the target emotion rank among predictions? (1 = top)
+        target_rank = None
+        for position, prediction in enumerate(predictions, start=1):
+            if prediction.get("emotion") == target_emotion:
+                target_rank = position
+                break
+
+        top_k_emotions = [p.get("emotion") for p in predictions[:MATCH_TOP_K]]
+        matched_strict = bool(model_loader.MODEL_LOADED and top_emotion == target_emotion)
+        matched = bool(model_loader.MODEL_LOADED and target_emotion in top_k_emotions)
 
         attempt_history.append(
             {
@@ -90,6 +111,8 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
                 "generated_message": generated_message,
                 "top_emotion": top_emotion,
                 "matched": matched,
+                "matched_strict": matched_strict,
+                "target_rank": target_rank,
                 "predictions": predictions,
             }
         )
@@ -117,6 +140,9 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
         "emotion_predictions": final_predictions,
         "top_emotion": final_top_emotion,
         "validation_success": validation_success,
+        "validation_success_strict": bool(attempt_history and attempt_history[-1].get("matched_strict")),
+        "target_rank": attempt_history[-1].get("target_rank") if attempt_history else None,
+        "match_top_k": MATCH_TOP_K,
         "attempts_used": len(attempt_history),
         "max_attempts": MAX_ATTEMPTS,
         "attempt_history": attempt_history,
