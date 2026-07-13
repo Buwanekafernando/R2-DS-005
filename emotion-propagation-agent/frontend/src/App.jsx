@@ -25,14 +25,6 @@ export default function App() {
         path="/"
         element={
           <Layout>
-            <Home />
-          </Layout>
-        }
-      />
-      <Route
-        path="/generate"
-        element={
-          <Layout>
             <Generate />
           </Layout>
         }
@@ -45,8 +37,6 @@ export default function App() {
           </Layout>
         }
       />
-      
-      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

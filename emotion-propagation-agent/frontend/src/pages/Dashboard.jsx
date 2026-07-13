@@ -184,6 +184,29 @@ export default function Dashboard() {
             />
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
+            <StatCard
+              label="Validation Success Rate"
+              value={
+                summary.validation_success_rate !== null &&
+                summary.validation_success_rate !== undefined
+                  ? `${(summary.validation_success_rate * 100).toFixed(1)}%`
+                  : "—"
+              }
+              sub="Share of generated messages whose detected emotion matched the target"
+            />
+            <StatCard
+              label="Average Attempts Used"
+              value={
+                summary.average_attempts_used !== null &&
+                summary.average_attempts_used !== undefined
+                  ? Number(summary.average_attempts_used).toFixed(2)
+                  : "—"
+              }
+              sub="Average number of LLM generation attempts before final output"
+            />
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-3">
             <MiniBarChart
               title="Engagement by Emotion"
@@ -212,7 +235,11 @@ export default function Dashboard() {
                   <tr>
                     <th className="px-4 py-3">participant_id</th>
                     <th className="px-4 py-3">product_name</th>
+                    <th className="px-4 py-3">category</th>
                     <th className="px-4 py-3">target_emotion</th>
+                    <th className="px-4 py-3">top_emotion</th>
+                    <th className="px-4 py-3">validation_success</th>
+                    <th className="px-4 py-3">attempts_used</th>
                     <th className="px-4 py-3">perceived_emotion</th>
                     <th className="px-4 py-3">emotion_strength</th>
                     <th className="px-4 py-3">message_clarity</th>
@@ -230,7 +257,11 @@ export default function Dashboard() {
                     >
                       <td className="px-4 py-3">{r.participant_id}</td>
                       <td className="px-4 py-3">{r.product_name}</td>
+                      <td className="px-4 py-3">{r.category}</td>
                       <td className="px-4 py-3">{r.target_emotion}</td>
+                      <td className="px-4 py-3">{r.top_emotion}</td>
+                      <td className="px-4 py-3">{String(r.validation_success)}</td>
+                      <td className="px-4 py-3">{r.attempts_used}</td>
                       <td className="px-4 py-3">{r.perceived_emotion}</td>
                       <td className="px-4 py-3">{r.emotion_strength}</td>
                       <td className="px-4 py-3">{r.message_clarity}</td>

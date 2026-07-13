@@ -2,17 +2,13 @@ import { useMemo } from "react";
 import { RotateCcw, Sparkles, Wand2 } from "lucide-react";
 
 const productCategories = [
-  "general",
-  "fashion",
-  "beauty",
-  "education",
-  "technology",
-  "healthcare",
-  "fitness",
-  "food",
-  "travel",
-  "finance",
-  "insurance",
+  "Baby",
+  "Beauty",
+  "Apparel",
+  "Electronics",
+  "Sports",
+  "Pet",
+  "Groceries",
 ];
 
 const targetEmotions = [
@@ -48,9 +44,10 @@ export default function ProductForm({
   const errors = useMemo(() => {
     const next = {};
     if (!form.product_name?.trim()) next.product_name = "Required";
-    if (!form.product_category?.trim()) next.product_category = "Required";
+    if (!(form.category || form.product_category)?.trim())
+      next.category = "Required";
     if (!form.target_audience?.trim()) next.target_audience = "Required";
-    if (!form.key_features?.trim()) next.key_features = "Required";
+    if (!(form.features || form.key_features)?.trim()) next.features = "Required";
     if (!form.target_emotion?.trim()) next.target_emotion = "Required";
     return next;
   }, [form]);
@@ -114,9 +111,9 @@ export default function ProductForm({
             Product Category
           </label>
           <select
-            className={inputClassName(Boolean(errors.product_category))}
-            value={form.product_category}
-            onChange={(e) => updateField("product_category", e.target.value)}
+            className={inputClassName(Boolean(errors.category))}
+            value={form.category ?? form.product_category ?? ""}
+            onChange={(e) => updateField("category", e.target.value)}
           >
             {productCategories.map((c) => (
               <option key={c} value={c}>
@@ -124,10 +121,8 @@ export default function ProductForm({
               </option>
             ))}
           </select>
-          {errors.product_category ? (
-            <div className="mt-1 text-xs text-rose-600">
-              {errors.product_category}
-            </div>
+          {errors.category ? (
+            <div className="mt-1 text-xs text-rose-600">{errors.category}</div>
           ) : null}
         </div>
 
@@ -139,7 +134,7 @@ export default function ProductForm({
             className={inputClassName(Boolean(errors.target_audience))}
             value={form.target_audience}
             onChange={(e) => updateField("target_audience", e.target.value)}
-            placeholder="e.g., university students"
+            placeholder="e.g., young parents"
           />
           {errors.target_audience ? (
             <div className="mt-1 text-xs text-rose-600">
@@ -150,18 +145,16 @@ export default function ProductForm({
 
         <div className="md:col-span-2">
           <label className="text-sm font-medium text-slate-800">
-            Key Features (comma-separated)
+            Features
           </label>
           <input
-            className={inputClassName(Boolean(errors.key_features))}
-            value={form.key_features}
-            onChange={(e) => updateField("key_features", e.target.value)}
-            placeholder="e.g., AI tutoring, progress tracking, personalized lessons"
+            className={inputClassName(Boolean(errors.features))}
+            value={form.features ?? form.key_features ?? ""}
+            onChange={(e) => updateField("features", e.target.value)}
+            placeholder="e.g., bright skin, smooth texture, daily skincare support"
           />
-          {errors.key_features ? (
-            <div className="mt-1 text-xs text-rose-600">
-              {errors.key_features}
-            </div>
+          {errors.features ? (
+            <div className="mt-1 text-xs text-rose-600">{errors.features}</div>
           ) : null}
         </div>
 

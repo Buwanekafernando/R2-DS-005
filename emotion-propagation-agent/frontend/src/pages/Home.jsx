@@ -27,10 +27,10 @@ export default function Home() {
         <div className="relative max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700">
             <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-            Component 2 • Emotion-Driven Marketing Content Generation System
+            Component 2 • Emotion Propagation Agent
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Emotion-Driven Marketing Content Generation System
+            Emotion Propagation Agent
           </h1>
           <p className="mt-3 text-base text-slate-600">
             AI-powered emotional marketing strategy generation for neuro-marketing research: target an emotion, generate aligned content, validate it with a trained classifier, and collect user study ratings.
@@ -61,7 +61,9 @@ export default function Home() {
             <div className="text-sm font-semibold text-slate-900">Research Features</div>
             <div className="mt-1 text-sm text-slate-600">End-to-end flow for message generation, validation, and evaluation.</div>
           </div>
-          
+          <Link to="/dashboard" className="hidden text-sm font-semibold text-indigo-700 hover:text-indigo-800 sm:inline-flex">
+            View Dashboard →
+          </Link>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
