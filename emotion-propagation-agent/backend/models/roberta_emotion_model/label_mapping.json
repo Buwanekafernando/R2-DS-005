@@ -1,0 +1,44 @@
+{
+    "label2id": {
+        "joy": 0,
+        "excitement": 1,
+        "trust": 2,
+        "confidence": 3,
+        "curiosity": 4,
+        "optimism": 5,
+        "relief": 6,
+        "admiration": 7,
+        "neutral": 8
+    },
+    "id2label": {
+        "0": "joy",
+        "1": "excitement",
+        "2": "trust",
+        "3": "confidence",
+        "4": "curiosity",
+        "5": "optimism",
+        "6": "relief",
+        "7": "admiration",
+        "8": "neutral"
+    },
+    "project_emotions": [
+        "joy",
+        "excitement",
+        "trust",
+        "confidence",
+        "curiosity",
+        "optimism",
+        "relief",
+        "admiration",
+        "neutral"
+    ],
+    "product_categories": [
+        "Baby",
+        "Beauty",
+        "Apparel",
+        "Electronics",
+        "Sports",
+        "Pet",
+        "Groceries"
+    ]
+}

@@ -1,0 +1,32 @@
+
+# RoBERTa Emotion Classifier for Emotion Propagation Agent
+
+## Purpose
+This model is trained for Component 2: Emotion Propagation Agent.
+It validates whether AI-generated marketing content expresses the intended target emotion.
+
+## Base Model
+roberta-base
+
+## Dataset
+GoEmotions dataset mapped into project-specific marketing emotions.
+
+## Project Emotion Classes
+['joy', 'excitement', 'trust', 'confidence', 'curiosity', 'optimism', 'relief', 'admiration', 'neutral']
+
+## Product Categories Supported by the Final System
+['Baby', 'Beauty', 'Apparel', 'Electronics', 'Sports', 'Pet', 'Groceries']
+
+## Final System Logic
+1. LLM generates marketing content.
+2. RoBERTa predicts the emotion of the generated content.
+3. If the predicted top emotion matches the target emotion, the content is accepted.
+4. If not, the content is regenerated up to 3 attempts.
+5. The final output, emotion prediction, and user rating data are used for analysis.
+
+## Output
+The model returns top predicted emotions with confidence scores.
+
+## Backend Folder
+Copy this model folder into:
+backend/models/roberta_emotion_model
