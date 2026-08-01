@@ -17,23 +17,21 @@
     "2": "trust",
     "3": "confidence",
     "4": "curiosity",
-    "5": "optimism",
-    "6": "relief",
-    "7": "admiration",
-    "8": "neutral"
+    "5": "relief",
+    "6": "admiration",
+    "7": "neutral"
   },
   "initializer_range": 0.02,
   "intermediate_size": 3072,
   "is_decoder": false,
   "label2id": {
-    "admiration": 7,
+    "admiration": 6,
     "confidence": 3,
     "curiosity": 4,
     "excitement": 1,
     "joy": 0,
-    "neutral": 8,
-    "optimism": 5,
-    "relief": 6,
+    "neutral": 7,
+    "relief": 5,
     "trust": 2
   },
   "layer_norm_eps": 1e-05,
@@ -43,7 +41,7 @@
   "num_hidden_layers": 12,
   "pad_token_id": 1,
   "tie_word_embeddings": true,
-  "transformers_version": "5.12.1",
+  "transformers_version": "5.13.1",
   "type_vocab_size": 1,
   "use_cache": false,
   "vocab_size": 50265

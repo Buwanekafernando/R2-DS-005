@@ -5,10 +5,9 @@
         "trust": 2,
         "confidence": 3,
         "curiosity": 4,
-        "optimism": 5,
-        "relief": 6,
-        "admiration": 7,
-        "neutral": 8
+        "relief": 5,
+        "admiration": 6,
+        "neutral": 7
     },
     "id2label": {
         "0": "joy",
@@ -16,10 +15,9 @@
         "2": "trust",
         "3": "confidence",
         "4": "curiosity",
-        "5": "optimism",
-        "6": "relief",
-        "7": "admiration",
-        "8": "neutral"
+        "5": "relief",
+        "6": "admiration",
+        "7": "neutral"
     },
     "project_emotions": [
         "joy",
@@ -27,7 +25,6 @@
         "trust",
         "confidence",
         "curiosity",
-        "optimism",
         "relief",
         "admiration",
         "neutral"
