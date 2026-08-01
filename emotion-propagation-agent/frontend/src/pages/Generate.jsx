@@ -12,11 +12,11 @@ import ProductForm from "../components/ProductForm";
 
 const recommendedEmotionByCategory = {
   Baby: ["trust", "relief", "joy"],
-  Beauty: ["confidence", "admiration", "joy"],
-  Apparel: ["confidence", "admiration", "excitement"],
-  Electronics: ["excitement", "trust", "curiosity"],
-  Sports: ["excitement", "confidence", "optimism"],
-  Pet: ["joy", "trust", "relief"],
+  Beauty: ["confidence", "trust", "joy"],
+  Apparel: ["joy", "excitement"],
+  Electronics: ["excitement", "joy"],
+  Sports: ["excitement", "confidence", "trust"],
+  Pet: ["joy", "trust"],
   Groceries: ["trust", "relief", "joy"],
 };
 

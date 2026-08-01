@@ -44,8 +44,7 @@ export default function Navbar() {
             <Sparkles className="h-4 w-4" />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-semibold text-slate-900">Emotion Propagation Agent</div>
-            <div className="text-xs text-slate-500">Component 2 • Research Prototype</div>
+            <div className="text-sm font-semibold text-slate-900">Emotion-Driven Marketing Content Generation System</div>
           </div>
         </div>
 

@@ -34,7 +34,7 @@ USER_STUDY_CSV = os.path.join(OUTPUTS_DIR, "user_study_responses.csv")
 MAX_ATTEMPTS = 3
 # A generation counts as a match if the target emotion lands within the top-K
 # predictions (not only #1). Set to 1 for strict top-1 matching, 2 or 3 to relax.
-MATCH_TOP_K = 2
+MATCH_TOP_K = 1
 
 
 def _json_error(message: str, status_code: int = 400):
@@ -69,14 +69,26 @@ def _normalize_generation_payload(payload: dict) -> dict:
     }
 
 
+def _target_score(predictions, target_emotion):
+    """Return the model's score for the target emotion (0.0 if not present)."""
+    for prediction in predictions:
+        if prediction.get("emotion") == target_emotion:
+            try:
+                return float(prediction.get("score", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+    return 0.0
+
+
 def _build_generation_result(data: dict, target_emotion: str) -> dict:
     previous_failure = None
     attempt_history = []
-    final_message = ""
-    final_predictions = []
-    final_top_emotion = None
     final_warning = model_loader.MODEL_WARNING
-    validation_success = False
+
+    # We keep the BEST attempt (the one where the target emotion scored highest),
+    # not simply the last attempt. A full match always wins.
+    best_record = None
+    best_target_score = -1.0
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         prompt = build_marketing_prompt(
@@ -93,6 +105,7 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
         predictions = validation.get("predictions", [])
         top_emotion = validation.get("top_emotion")
         warning = validation.get("warning")
+        final_warning = warning
 
         # Where does the target emotion rank among predictions? (1 = top)
         target_rank = None
@@ -104,31 +117,52 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
         top_k_emotions = [p.get("emotion") for p in predictions[:MATCH_TOP_K]]
         matched_strict = bool(model_loader.MODEL_LOADED and top_emotion == target_emotion)
         matched = bool(model_loader.MODEL_LOADED and target_emotion in top_k_emotions)
+        this_target_score = _target_score(predictions, target_emotion)
 
-        attempt_history.append(
-            {
-                "attempt": attempt,
-                "generated_message": generated_message,
-                "top_emotion": top_emotion,
-                "matched": matched,
-                "matched_strict": matched_strict,
-                "target_rank": target_rank,
-                "predictions": predictions,
-            }
-        )
+        record = {
+            "attempt": attempt,
+            "generated_message": generated_message,
+            "top_emotion": top_emotion,
+            "matched": matched,
+            "matched_strict": matched_strict,
+            "target_rank": target_rank,
+            "target_score": round(this_target_score, 4),
+            "predictions": predictions,
+            "warning": warning,
+        }
+        attempt_history.append(record)
 
-        final_message = generated_message
-        final_predictions = predictions
-        final_top_emotion = top_emotion
-        final_warning = warning
-        validation_success = matched
+        # Track the best attempt so far by how strongly the target emotion scored.
+        if this_target_score > best_target_score:
+            best_target_score = this_target_score
+            best_record = record
 
         if matched:
+            # A match is the best possible outcome; keep it and stop.
+            best_record = record
             break
 
         previous_failure = top_emotion
         if not model_loader.MODEL_LOADED:
             break
+
+    # Choose the final result: the best attempt (or the last one as a fallback).
+    chosen = best_record if best_record is not None else (attempt_history[-1] if attempt_history else None)
+
+    if chosen:
+        final_message = chosen["generated_message"]
+        final_predictions = chosen["predictions"]
+        final_top_emotion = chosen["top_emotion"]
+        validation_success = bool(chosen.get("matched"))
+        validation_success_strict = bool(chosen.get("matched_strict"))
+        final_target_rank = chosen.get("target_rank")
+    else:
+        final_message = ""
+        final_predictions = []
+        final_top_emotion = None
+        validation_success = False
+        validation_success_strict = False
+        final_target_rank = None
 
     response = {
         "product_name": data["product_name"],
@@ -140,13 +174,12 @@ def _build_generation_result(data: dict, target_emotion: str) -> dict:
         "emotion_predictions": final_predictions,
         "top_emotion": final_top_emotion,
         "validation_success": validation_success,
-        "validation_success_strict": bool(attempt_history and attempt_history[-1].get("matched_strict")),
-        "target_rank": attempt_history[-1].get("target_rank") if attempt_history else None,
+        "validation_success_strict": validation_success_strict,
+        "target_rank": final_target_rank,
         "match_top_k": MATCH_TOP_K,
         "attempts_used": len(attempt_history),
         "max_attempts": MAX_ATTEMPTS,
         "attempt_history": attempt_history,
-        "cta": get_visual_suggestions(target_emotion)["cta"],
         "visual_suggestions": get_visual_suggestions(target_emotion),
     }
 
@@ -260,7 +293,6 @@ def api_generate_variations():
                     "max_attempts": result["max_attempts"],
                     "emotion_predictions": result["emotion_predictions"],
                     "attempt_history": result["attempt_history"],
-                    "cta": result["cta"],
                     "visual_suggestions": result["visual_suggestions"],
                     "warning": result.get("warning"),
                 }

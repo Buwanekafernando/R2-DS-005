@@ -8,8 +8,8 @@ import requests
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # If this model ever stops working, just change this one line.
-# Alternatives: "openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.1-8b-instant"
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+# Alternatives: "openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
 
 PRODUCT_CATEGORIES = [
     "Baby",
@@ -27,7 +27,6 @@ PROJECT_EMOTIONS = [
     "trust",
     "confidence",
     "curiosity",
-    "optimism",
     "relief",
     "admiration",
     "neutral",
@@ -35,68 +34,54 @@ PROJECT_EMOTIONS = [
 
 CATEGORY_EMOTION_MAP = {
     "Baby": ["trust", "relief", "joy"],
-    "Beauty": ["confidence", "admiration", "joy"],
-    "Apparel": ["confidence", "admiration", "excitement"],
-    "Electronics": ["excitement", "trust", "curiosity"],
-    "Sports": ["excitement", "confidence", "optimism"],
-    "Pet": ["joy", "trust", "relief"],
+    "Beauty": ["confidence", "trust", "joy"],
+    "Apparel": ["joy", "excitement"],
+    "Electronics": ["excitement", "joy"],
+    "Sports": ["excitement", "confidence", "trust"],
+    "Pet": ["joy", "trust"],
     "Groceries": ["trust", "relief", "joy"],
 }
 
 VISUAL_SUGGESTIONS = {
     "joy": {
-        "cta": "Bring joy home today",
-        "palette": "Warm yellow, soft orange, fresh white",
-        "image_style": "Smiling users, bright natural lighting, friendly product setting",
-        "layout_mood": "Positive, warm, and approachable",
+        "palette": "Warm yellow, soft orange, red",
+        "image_style": "High-brightness painterly texture, warm golden-yellow lighting, vivid orange highlights, soft expressive focus",
+        "layout_mood": "High positive affect, warm, luminous, and emotionally synesthetic",
     },
     "excitement": {
-        "cta": "Discover it now",
-        "palette": "Orange, red, purple",
-        "image_style": "Dynamic action shots, bold product close-ups, energetic backgrounds",
-        "layout_mood": "Bold, fast-moving, and energetic",
+        "palette": "Red, orange, purple",
+        "image_style": "High-risk extreme sports, thrill/free-motion action shots, intimate/passionate human interactions, intense high-arousal scenes",
+        "layout_mood": "Thrill-seeking, high-impact, passionate, and fast-paced",
     },
     "trust": {
-        "cta": "Choose with confidence",
-        "palette": "Blue, white, navy",
-        "image_style": "Clean product visuals, professional users, safe and reliable setting",
-        "layout_mood": "Secure, reliable, and professional",
+        "palette": "Blue, Pink, navy",
+        "image_style": "High-realism human photography, authentic user-generated content (UGC), clear product feature shots",
+        "layout_mood": "High media richness, transparent, predictable, and credible",
     },
     "confidence": {
-        "cta": "Step forward with confidence",
-        "palette": "Black, gold, deep blue",
-        "image_style": "Strong posture, premium product focus, achievement-based setting",
-        "layout_mood": "Empowering, polished, and bold",
+        "palette": "Purple,black, gold, deep blue",
+        "image_style": "Strong upright posture, neat professional clothing, modern background with sharp angles",
+        "layout_mood": "Bold, strong, and modern",
     },
     "curiosity": {
-        "cta": "Explore what makes it different",
         "palette": "Purple, teal, light grey",
-        "image_style": "Close-up details, discovery-based visuals, question-driven design",
-        "layout_mood": "Intriguing, modern, and exploratory",
-    },
-    "optimism": {
-        "cta": "Start something better today",
-        "palette": "Sky blue, green, white",
-        "image_style": "Bright future-oriented scenes, morning light, progress visuals",
-        "layout_mood": "Hopeful, clean, and forward-looking",
+        "image_style": "Unusual product combinations, dreamlike settings, visual puzzles, unexpected angles, creative macro close-ups",
+        "layout_mood": "Playful, mystery-filled, intriguing, and mind-bending",
     },
     "relief": {
-        "cta": "Make life easier today",
         "palette": "Soft green, light blue, white",
-        "image_style": "Relaxed users, simple routines, calm product usage",
-        "layout_mood": "Calm, simple, and reassuring",
+        "image_style": "Serene natural landscapes, soft open scenery, wholesome human interactions, relaxed users in calm settings",
+        "layout_mood": "Soothing, harmonious, spacious, and reassuring",
     },
     "admiration": {
-        "cta": "Experience standout quality",
         "palette": "Gold, black, ivory",
         "image_style": "Premium product shots, elegant backgrounds, refined details",
         "layout_mood": "Elegant, premium, and aspirational",
     },
     "neutral": {
-        "cta": "Learn more",
-        "palette": "Grey, white, muted blue",
-        "image_style": "Simple product image with clear information",
-        "layout_mood": "Informative, balanced, and clear",
+        "palette": "Grey, white, brown",
+        "image_style": "Static, un-animated product photography with balanced composition, moderate color saturation, and clean, uncluttered visual backgrounds",
+        "layout_mood": "Informative, visual-balance focused, structured, and emotionally neutral",
     },
 }
 
@@ -155,6 +140,7 @@ def generate_with_groq(prompt: str, model_name: str = DEFAULT_GROQ_MODEL) -> str
         raise RuntimeError("Groq returned an empty response.")
     return message
 
+
 # Per-emotion writing guidance. "convey" tells Groq what to express;
 # "avoid" pushes it away from near-twin emotions the classifier confuses it with.
 EMOTION_SIGNALS = {
@@ -171,16 +157,12 @@ EMOTION_SIGNALS = {
         "avoid": "hype, exaggeration, or high-energy excitement",
     },
     "confidence": {
-        "convey": "how the reader feels self-assured, capable, in control, and empowered to act",
-        "avoid": "praising how impressive or beautiful the PRODUCT is (that reads as admiration); keep the spotlight on the READER's own capability and self-assurance, not on the product's brilliance",
+        "convey": "a forward-looking, self-assured belief that things will keep getting better for the reader \u2014 hopeful momentum, reaching goals, moving forward, a brighter result ahead, and the reader feeling capable of achieving it",
+        "avoid": "praising how impressive, stunning, elegant, radiant, or premium the product or result is (that reads as admiration); do NOT use words like stunning, radiant, unparalleled, standout, or flawless \u2014 focus on the reader's forward progress and self-belief, not on how impressive the product looks",
     },
     "curiosity": {
         "convey": "intrigue, a sense of discovery, and an open question that makes the reader want to explore",
         "avoid": "revealing everything upfront or making flat, definitive statements",
-    },
-    "optimism": {
-        "convey": "hope, a brighter future, positive momentum, and better days ahead",
-        "avoid": "present-moment thrill or urgency (that reads as excitement)",
     },
     "relief": {
         "convey": "ease, calm, stress lifting away, and things finally becoming simple",

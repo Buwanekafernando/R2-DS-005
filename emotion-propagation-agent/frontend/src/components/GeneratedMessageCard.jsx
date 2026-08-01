@@ -29,7 +29,6 @@ export default function GeneratedMessageCard({ result }) {
   const message = result?.generated_message || "";
   const emotion = (result?.target_emotion || "neutral").toLowerCase();
   const detectedEmotion = (result?.top_emotion || "unknown").toLowerCase();
-  const cta = result?.cta || "";
   const visual = result?.visual_suggestions || null;
   const warning = result?.warning || null;
   const validationSuccess = Boolean(result?.validation_success);
@@ -105,11 +104,6 @@ export default function GeneratedMessageCard({ result }) {
 
       <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900">
         <div className="whitespace-pre-wrap text-sm leading-6">{message}</div>
-        {cta ? (
-          <div className="mt-3 inline-flex rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm">
-            CTA: <span className="ml-2 font-medium text-slate-700">{cta}</span>
-          </div>
-        ) : null}
       </div>
 
       <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
