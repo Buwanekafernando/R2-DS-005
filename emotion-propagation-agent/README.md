@@ -1,23 +1,23 @@
 # Emotion Propagation Agent (Component 2)
 
-Component 2: “Emotion Propagation Agent for AI-Generated Neuro-Marketing Content.”
+Component 2: "Emotion Propagation Agent for AI-Generated Neuro-Marketing Content."
 
 ## Theoretical Foundation
 
-This research prototype is grounded in Emotional Contagion. The system studies whether emotionally aligned AI-generated marketing content can transmit a selected emotional tone to users and whether that alignment improves persuasiveness, trustworthiness, and engagement outcomes.
+This research prototype is grounded in Emotional Contagion. The system studies whether emotionally aligned AI-generated marketing content can transmit a selected emotional tone to users, and whether that alignment improves persuasiveness, trustworthiness, and engagement outcomes.
 
-## Updated Architecture
+## Architecture
 
-User Input → LLM Generator → RoBERTa Emotion Validator → Regeneration Loop → Final Content → User Study → Dashboard
+User Input → LLM Generator (Groq) → RoBERTa Emotion Validator → Regeneration Loop → Best-Attempt Selection → Final Content → User Study → Dashboard
 
-The backend generates a message with a local LLM through Ollama, validates the generated text with a RoBERTa-based emotion classifier, and regenerates the message up to three times if the detected emotion does not match the selected target emotion.
+The backend generates a marketing message with a large language model through the Groq API, validates the generated text with a fine-tuned RoBERTa emotion classifier, and regenerates the message up to five times if the detected emotion does not match the selected target emotion. Across the attempts, the system keeps the attempt where the target emotion scored highest.
 
 ## Tech Stack
 
 - Frontend: React.js + Vite + Tailwind CSS
 - Backend: Python Flask API with CORS
-- Generation: Local Ollama LLM (`llama3.1`)
-- Validation: RoBERTa sequence classification model loaded from local files
+- Generation: Groq API (LLaMA, default `llama-3.1-8b-instant`)
+- Validation: Fine-tuned RoBERTa sequence classification model loaded from local files
 - Analytics: Pandas CSV logging + dashboard summaries
 
 ## Prerequisites
@@ -26,7 +26,7 @@ Before running the project, make sure you have:
 
 - Python 3.10 or newer
 - Node.js 18 or newer with npm
-- Ollama installed locally
+- A Groq API key (from https://console.groq.com)
 - The RoBERTa model folder copied into `backend/models/roberta_emotion_model/`
 
 Recommended checks:
@@ -35,7 +35,6 @@ Recommended checks:
 python --version
 node --version
 npm --version
-ollama --version
 ```
 
 ## Supported Product Categories
@@ -55,10 +54,26 @@ ollama --version
 - trust
 - confidence
 - curiosity
-- optimism
 - relief
 - admiration
 - neutral
+
+(Note: an earlier version used a separate `optimism` label. Based on emotion-taxonomy literature, optimism was merged into `confidence`, giving the current 8 labels.)
+
+## Dataset
+
+The RoBERTa validator is fine-tuned on the GoEmotions dataset (Google Research), which provides 27 emotions plus neutral. GoEmotions is mapped down to the 8 project emotions above, then class-balanced for training.
+
+```text
+dataset/
+├── raw/          # original GoEmotions train/validation/test files
+└── processed/    # mapped + balanced CSVs actually used for training
+    ├── train_mapped.csv
+    ├── validation_mapped.csv
+    ├── test_mapped.csv
+    ├── train_balanced.csv
+    └── sample_mapped_rows.csv
+```
 
 ## Folder Structure
 
@@ -67,6 +82,7 @@ emotion-propagation-agent/
 ├── backend/
 │   ├── app.py
 │   ├── requirements.txt
+│   ├── .env                     # holds GROQ_API_KEY (do not commit)
 │   ├── models/
 │   │   └── roberta_emotion_model/
 │   │       ├── config.json
@@ -76,13 +92,15 @@ emotion-propagation-agent/
 │   │       ├── vocab.json
 │   │       ├── merges.txt
 │   │       ├── special_tokens_map.json
-│   │       ├── label_mapping.json
-│   │       └── MODEL_CARD.txt
+│   │       └── label_mapping.json
 │   ├── outputs/
 │   │   └── user_study_responses.csv
 │   └── utils/
 │       ├── model_loader.py
 │       └── emotion_agent.py
+├── dataset/
+│   ├── raw/
+│   └── processed/
 └── frontend/
     ├── package.json
     ├── index.html
@@ -100,26 +118,9 @@ Copy the full model folder into:
 emotion-propagation-agent/backend/models/roberta_emotion_model/
 ```
 
-The backend looks for the tokenizer, model weights, and optional `label_mapping.json` in that folder. If the folder is missing, the backend still runs and returns an explanatory warning through `/health`, `/api/predict-emotion`, and generation endpoints.
+The backend looks for the tokenizer, model weights, and `label_mapping.json` in that folder. If the folder is missing, the backend still runs and returns an explanatory warning through `/health`, `/api/predict-emotion`, and the generation endpoints.
 
-## How to Train in Colab
-
-Typical workflow:
-
-1. Fine-tune a RoBERTa sequence classification model in Google Colab.
-2. Save the tokenizer and model with `save_pretrained()`.
-3. Export a `label_mapping.json` file that maps model output indexes to project emotion labels.
-4. Download the saved model folder.
-5. Copy the folder into `backend/models/roberta_emotion_model/`.
-
-Example save commands in Colab:
-
-```python
-model.save_pretrained("roberta_emotion_model")
-tokenizer.save_pretrained("roberta_emotion_model")
-```
-
-Example label mapping file:
+The `label_mapping.json` must match the trained model's 8 labels:
 
 ```json
 {
@@ -128,97 +129,48 @@ Example label mapping file:
   "2": "trust",
   "3": "confidence",
   "4": "curiosity",
-  "5": "optimism",
-  "6": "relief",
-  "7": "admiration",
-  "8": "neutral"
+  "5": "relief",
+  "6": "admiration",
+  "7": "neutral"
 }
 ```
 
-## Ollama Setup
+## Groq API Setup
 
-Install and run the local LLM before generating content.
+The backend generates content through the Groq API, so no local LLM is required.
 
-### macOS
+1. Create an account and API key at https://console.groq.com (API Keys).
+2. In the `backend` folder, create a file named `.env` containing:
 
-- Option 1: download Ollama from [https://ollama.com/download](https://ollama.com/download)
-- Option 2: install with Homebrew:
-
-```bash
-brew install ollama
+```text
+GROQ_API_KEY=gsk_your_actual_key_here
 ```
 
-### Windows
-
-- Download the Windows installer from [https://ollama.com/download](https://ollama.com/download)
-- Run the installer
-- Open a new terminal after installation
-
-### Start Ollama and pull the model
-
-Keep Ollama running in one terminal:
-
-```bash
-ollama serve
-```
-
-In another terminal, download the required model:
-
-```bash
-ollama pull llama3.1
-ollama run llama3.1
-```
+3. Add `.env` to `.gitignore` so the key is never committed.
 
 The backend calls:
 
 ```text
-http://localhost:11434/api/generate
+https://api.groq.com/openai/v1/chat/completions
 ```
 
-If Ollama is not running, generation endpoints return:
+If the key is missing or the service is unreachable, the generation endpoints return:
 
-`LLM service is not available. Please start Ollama and ensure llama3.1 is installed.`
+`GROQ_API_KEY is not set. Add it to a .env file or your environment variables.`
+or
+`Groq LLM service is not available. Check your API key and internet connection.`
+
+## How to Train in Colab
+
+Typical workflow:
+
+1. Fine-tune a RoBERTa sequence classification model in Google Colab on the mapped GoEmotions data.
+2. Save the tokenizer and model with `save_pretrained()`.
+3. Export a `label_mapping.json` file mapping model output indexes to the 8 project emotions.
+4. Download the saved model folder.
+5. Copy the folder into `backend/models/roberta_emotion_model/`.
 
 ## Project Setup
-
-### macOS Setup
-
-1. Clone or extract the project.
-2. Copy your trained RoBERTa folder into:
-
-```text
-emotion-propagation-agent/backend/models/roberta_emotion_model/
-```
-
-3. Start Ollama:
-
-```bash
-ollama serve
-```
-
-4. In another terminal, pull the model if it is not already installed:
-
-```bash
-ollama pull llama3.1
-```
-
-5. Start the backend:
-
-```bash
-cd emotion-propagation-agent/backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python app.py
-```
-
-6. Start the frontend in a new terminal:
-
-```bash
-cd emotion-propagation-agent/frontend
-npm install
-npm run dev
-```
 
 ### Windows Setup
 
@@ -229,29 +181,18 @@ npm run dev
 emotion-propagation-agent\backend\models\roberta_emotion_model\
 ```
 
-3. Start Ollama from the Start menu or a terminal:
-
-```powershell
-ollama serve
-```
-
-4. In another terminal, pull the model if it is not already installed:
-
-```powershell
-ollama pull llama3.1
-```
-
-5. Start the backend:
+3. Create the `.env` file in `backend\` with your `GROQ_API_KEY` (see Groq API Setup).
+4. Start the backend:
 
 ```powershell
 cd emotion-propagation-agent\backend
 python -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python app.py
 ```
 
-6. Start the frontend in a new terminal:
+5. Start the frontend in a new terminal:
 
 ```powershell
 cd emotion-propagation-agent\frontend
@@ -259,32 +200,35 @@ npm install
 npm run dev
 ```
 
-## Backend Run Commands
+### macOS Setup
+
+1. Clone or extract the project.
+2. Copy your trained RoBERTa folder into:
+
+```text
+emotion-propagation-agent/backend/models/roberta_emotion_model/
+```
+
+3. Create the `.env` file in `backend/` with your `GROQ_API_KEY` (see Groq API Setup).
+4. Start the backend:
 
 ```bash
-cd backend
-python -m venv venv
+cd emotion-propagation-agent/backend
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python app.py
 ```
 
-For Windows activation:
+5. Start the frontend in a new terminal:
 
 ```bash
-venv\Scripts\activate
-```
-
-Backend URL: `http://localhost:5000`
-
-## Frontend Run Commands
-
-```bash
-cd frontend
+cd emotion-propagation-agent/frontend
 npm install
 npm run dev
 ```
 
+Backend URL: `http://localhost:5000`
 Frontend URL: `http://localhost:5173`
 
 If port `5173` is already in use, start Vite on another port:
@@ -299,14 +243,13 @@ Then open `http://localhost:5174`.
 
 Use this checklist when setting up on a new machine:
 
-1. Install Python, Node.js, npm, and Ollama.
+1. Install Python, Node.js, and npm.
 2. Copy the RoBERTa model folder to `backend/models/roberta_emotion_model/`.
-3. Run `ollama serve`.
-4. Run `ollama pull llama3.1`.
-5. Start Flask in `backend/`.
-6. Start Vite in `frontend/`.
-7. Open the frontend in a browser.
-8. Test `GET /health` to confirm `model_loaded: true`.
+3. Create `backend/.env` with your `GROQ_API_KEY`.
+4. Start Flask in `backend/`.
+5. Start Vite in `frontend/`.
+6. Open the frontend in a browser.
+7. Test `GET /health` to confirm `model_loaded: true` and that 8 emotions are listed.
 
 ## API Endpoints
 
@@ -329,8 +272,8 @@ Use this checklist when setting up on a new machine:
     }
     ```
 - `POST /api/generate-message`
-  - Generates content with Ollama and validates it with RoBERTa.
-  - If the target emotion is not detected, the backend regenerates up to 3 attempts.
+  - Generates content with Groq and validates it with RoBERTa.
+  - If the target emotion is not detected, the backend regenerates up to 5 attempts and keeps the best-scoring one.
 - `POST /api/generate-variations`
   - Runs the same LLM + validation loop for multiple requested emotions.
 - `POST /api/user-study`
@@ -347,15 +290,15 @@ Use this checklist when setting up on a new machine:
 The generation endpoint follows this process:
 
 1. Accept product details and target emotion.
-2. Build a structured prompt for the local LLM.
+2. Build a structured prompt for the Groq LLM, including per-emotion "convey / avoid" signals.
 3. Generate one short marketing message.
 4. Validate the message with the RoBERTa emotion classifier.
-5. If the detected top emotion matches the target emotion, accept the message.
-6. If it does not match, regenerate the message with corrective instructions.
-7. Stop after a maximum of 3 attempts.
-8. Return the final message, prediction scores, validation status, and attempt history.
+5. A generation counts as a match if the target emotion is the top predicted emotion (strict top-1 matching).
+6. If it does not match, regenerate with corrective instructions naming the emotion to avoid.
+7. Stop after a maximum of 5 attempts.
+8. Keep the attempt where the target emotion scored highest, and return the final message, prediction scores, validation status, and attempt history.
 
-If the target emotion is not matched after 3 attempts, the API still returns the latest message and sets `validation_success` to `false`.
+If the target emotion is not matched, the API still returns the best message and sets `validation_success` to `false`.
 
 ## User Study Explanation
 
@@ -368,25 +311,17 @@ Participants evaluate each generated message using:
 - Engagement interest
 - Purchase interest
 
-The app also stores:
-
-- category
-- target emotion
-- detected top emotion
-- validation success flag
-- number of attempts used
-
-This supports comparison between intended emotion, model-detected emotion, and human-perceived emotion.
+The app also stores category, target emotion, detected top emotion, validation success flag, and number of attempts used. This supports comparison between the intended emotion, the model-detected emotion, and the human-perceived emotion.
 
 ## Final Expected Flow
 
 1. User opens the React frontend.
 2. User enters product name, category, audience, features, and target emotion.
 3. React sends the request to Flask.
-4. Flask builds an LLM prompt and generates a marketing message with Ollama.
+4. Flask builds an LLM prompt and generates a marketing message with Groq.
 5. RoBERTa validates the generated message.
 6. If the detected emotion matches the target emotion, the message is accepted.
-7. If not, Flask regenerates the content up to 3 attempts.
-8. React displays the final message, detected emotion, prediction scores, validation status, attempts used, attempt history, CTA, and visual suggestions.
+7. If not, Flask regenerates the content up to 5 attempts and keeps the best one.
+8. React displays the final message, detected emotion, prediction scores, validation status, attempts used, attempt history, and visual suggestions (color palette, image style, layout mood).
 9. User submits evaluation ratings.
 10. Dashboard summarizes the research outputs.
