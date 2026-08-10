@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import json
+from pain_point_extractor import extract_pain_points
 
 def process_all_categories(base_dir, output_json, limit_per_cat=50):
     folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f)) and f.startswith("amazon_reviews_us_")]
@@ -36,11 +37,9 @@ def process_all_categories(base_dir, output_json, limit_per_cat=50):
                 for _, row in chunk.iterrows():
                     title = row['product_title']
                     if title not in seen_titles:
-                        body = str(row['review_body']).lower()
-                        pain_points = []
-                        if "slow" in body or "wait" in body: pain_points.append("Shipping Delays")
-                        if "sold out" in body or "waitlist" in body: pain_points.append("Stock Instability")
-                        if "expensive" in body or "price" in body: pain_points.append("Price Sensitivity")
+                        body = str(row['review_body'])
+                        # Use enhanced pain point extraction with 40+ keywords
+                        pain_points = extract_pain_points(body)
                         
                         cat_products.append({
                             "name": title,

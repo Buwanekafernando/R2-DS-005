@@ -5,6 +5,7 @@ Evaluates the accuracy and performance of Scarcity Agent models
 
 import json
 from typing import List, Dict, Tuple
+from pain_point_extractor import extract_pain_points
 
 # Optional imports - don't fail if not available
 try:
@@ -161,18 +162,8 @@ class ModelEvaluator:
     # ============================================
     
     def _extract_pain_points(self, review_text: str) -> List[str]:
-        """Extract pain points from review text (same logic as dataset_processor)"""
-        body = review_text.lower()
-        pain_points = []
-        
-        if "slow" in body or "wait" in body:
-            pain_points.append("Shipping Delays")
-        if "sold out" in body or "waitlist" in body:
-            pain_points.append("Stock Instability")
-        if "expensive" in body or "price" in body:
-            pain_points.append("Price Sensitivity")
-        
-        return pain_points
+        """Extract pain points from review text using enhanced extractor (40+ keywords, 12 categories)"""
+        return extract_pain_points(review_text)
     
     def generate_report(self) -> Dict:
         """Generate comprehensive evaluation report"""

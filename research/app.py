@@ -4,14 +4,19 @@ import json
 import time
 import os
 
-# Load environment variables from .env file if it exists
+# Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # Explicitly specify the .env file path in the research directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(script_dir, '.env')
+    load_dotenv(dotenv_path=env_path)
 except ImportError:
     pass
 
 from scarcity_agent import ScarcityAgent
+from pain_point_extractor import extract_pain_points_detailed, get_extractor
+from review_reader import get_product_pain_profile
 
 # Set Page Config
 st.set_page_config(
@@ -242,8 +247,18 @@ if 'results' not in st.session_state:
     st.session_state.results = None
 if 'selected_product' not in st.session_state:
     st.session_state.selected_product = None
+if 'review_pain_points' not in st.session_state:
+    st.session_state.review_pain_points = None
+if 'product_profile' not in st.session_state:
+    st.session_state.product_profile = None
 
-agent_logic = ScarcityAgent()
+# Initialize ScarcityAgent with error handling
+try:
+    agent_logic = ScarcityAgent()
+except ValueError as e:
+    st.error(f"⚠️ Configuration Error: {str(e)}")
+    st.info("Please ensure XAI_API_KEY is set in the .env file in the research directory.")
+    st.stop()
 
 # --- NAVBAR ---
 st.markdown("""
@@ -273,8 +288,10 @@ with col_left:
     st.markdown('<div class="card-header"><span class="card-title">Product & Context Input</span></div>', unsafe_allow_html=True)
     with st.container():
         # Load from Dataset if available
-        if os.path.exists("sample_products.json"):
-            with open("sample_products.json", 'r', encoding='utf-8') as f:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        sample_file = os.path.join(script_dir, "sample_products.json")
+        if os.path.exists(sample_file):
+            with open(sample_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
             # Step 1: Select Category
@@ -321,13 +338,66 @@ with col_left:
         st.markdown('<p class="product-description" style="font-weight: bold; margin-bottom: 5px;">Product Description</p>', unsafe_allow_html=True)
         p_desc = st.text_area("", "Authentic leather, handcrafted for a professional look.", label_visibility="collapsed")
         
-        # DISPLAY SENTIMENT SIGNALS
-        st.markdown('<h5 class="customer-sentiment">Customer Sentiment Signals</h5>', unsafe_allow_html=True)
-        if p_details.get('pain_points'):
-            for point in p_details['pain_points']:
-                st.markdown(f'<span class="nav-badge" style="background:var(--coral-50); color:black; border-color:var(--coral-100); margin-right:5px;">{point} Detected</span>', unsafe_allow_html=True)
-        else:
-            st.write("No specific pain points detected in reviews.")
+        # ENHANCED PAIN POINT EXTRACTION DISPLAY
+        # st.markdown('<h5 class="customer-sentiment">🔍 Customer Pain Point Analysis (40+ Keywords)</h5>', unsafe_allow_html=True)
+        
+        # Extract pain points with details from the product description
+        pain_analysis = extract_pain_points_detailed(p_desc)
+        
+        # if pain_analysis['total_pain_points'] > 0:
+        #     # Display keyword extraction stats
+        #     col1, col2, col3 = st.columns(3)
+        #     with col1:
+        #         st.metric("Pain Points Found", pain_analysis['total_pain_points'])
+        #     with col2:
+        #         high_priority = pain_analysis['priority_distribution']['HIGH']
+        #         st.metric("HIGH Priority", high_priority)
+        #     with col3:
+        #         medium_priority = pain_analysis['priority_distribution']['MEDIUM']
+        #         st.metric("MEDIUM Priority", medium_priority)
+        #     
+        #     # Display detailed pain points with matched keywords
+        #     st.markdown("**Detected Pain Points & Keywords:**")
+        #     for pain_point, details in pain_analysis['matched_keywords'].items():
+        #         priority = details['priority']
+        #         keyword = details['keyword']
+        #         weight = details['weight']
+        #         
+        #         # Color coding by priority
+        #         priority_color = "#FF4444" if priority == "HIGH" else "#FFA500"
+        #         st.markdown(f"""
+        #         <div style="padding: 10px; margin: 5px 0; border-left: 4px solid {priority_color}; background: #f9f9f9; border-radius: 4px;">
+        #             <strong>{pain_point}</strong> [{priority}]<br>
+        #             <small>Keyword: <code>{keyword}</code> | Weight: {weight}</small>
+        #         </div>
+        #         """, unsafe_allow_html=True)
+        # else:
+        #     st.info("No specific pain points detected in the product description. Try adding customer concerns to the description.")
+        
+        # Show extraction method info
+        # with st.expander("📊 Keyword Extraction Method"):
+        #     extractor = get_extractor()
+        #     coverage = extractor.get_keyword_coverage()
+        #     st.markdown(f"""
+        #     **Enhanced Pain Point Extraction System:**
+        #     - Total Keywords: {coverage['total_keywords']}
+        #     - Pain Point Categories: {coverage['total_categories']}
+        #     - Avg Keywords per Category: {coverage['keywords_per_category']:.1f}
+        #     
+        #     **Categories Covered:**
+        #     1. Shipping Delays (14 keywords)
+        #     2. Stock Instability (13 keywords)
+        #     3. Price Sensitivity (15 keywords)
+        #     4. Quality Issues (14 keywords)
+        #     5. Durability & Longevity (14 keywords)
+        #     6. Poor Customer Service (12 keywords)
+        #     7. Return/Refund Difficulties (13 keywords)
+        #     8. Packaging Problems (11 keywords)
+        #     9. Authenticity Concerns (13 keywords)
+        #     10. Expectation Misalignment (13 keywords)
+        #     11. Fit/Compatibility Issues (13 keywords)
+        #     12. Poor Value Proposition (13 keywords)
+        #     """)
 
         # Add mode selector
         use_llm = st.checkbox("Use AI-powered generation (requires xAI API key)", value=False)
@@ -343,8 +413,26 @@ with col_left:
 # --- MAIN DASHBOARD ---
 col_left = st.container()
 
-with col_left:
+# Only show processing status when agent is activated (FIXES BLUR ISSUE)
+if st.session_state.running:
+    with col_left:
         with st.status("Agentic Reasoning in progress...", expanded=True) as status:
+            st.write("🔍 Reading product reviews...")
+            time.sleep(0.3)
+            
+            # Extract pain points from real reviews
+            if st.session_state.selected_product:
+                product_profile = get_product_pain_profile(
+                    st.session_state.selected_product['name'],
+                    st.session_state.selected_product.get('category', None),
+                    review_limit=100
+                )
+                st.session_state.product_profile = product_profile
+                
+                if product_profile.get('reviews_found', 0) > 0:
+                    st.write(f"✅ Found {product_profile['reviews_found']} reviews | Avg Rating: {product_profile['avg_rating']:.1f}⭐")
+                    st.session_state.review_pain_points = product_profile['pain_analysis']
+            
             st.write("🔍 Identifying suitable scarcity context...")
             time.sleep(0.6)
             st.write("📊 Analyzing customer sentiment patterns...")
@@ -379,6 +467,48 @@ with col_left:
         }
         st.session_state.running = False
 
+# REVIEW-BASED PAIN POINTS DISPLAY
+# if st.session_state.get('review_pain_points'):
+#     st.divider()
+#     st.markdown('<h3 class="scarcity-strategies">📊 Pain Points Analysis from Product Reviews</h3>', unsafe_allow_html=True)
+#     
+#     profile = st.session_state.get('product_profile', {})
+#     pain_stats = st.session_state.get('review_pain_points', {})
+#     
+#     # Display statistics
+#     col1, col2, col3, col4 = st.columns(4)
+#     with col1:
+#         st.metric("Reviews Analyzed", profile.get('reviews_found', 0))
+#     with col2:
+#         st.metric("Avg Rating", f"{profile.get('avg_rating', 0):.1f}⭐")
+#     with col3:
+#         st.metric("Unique Pain Points", len(pain_stats.get('pain_point_frequency', {})))
+#     with col4:
+#         st.metric("Avg Pain Points/Review", f"{pain_stats.get('avg_pain_points_per_review', 0):.1f}")
+#     
+#     # Display top pain points with percentages
+#     st.markdown("**Top Pain Points from Reviews:**")
+#     top_pain_points = pain_stats.get('top_pain_points', [])
+#     
+#     for idx, (pain_point, count) in enumerate(top_pain_points, 1):
+#         percentage = pain_stats['pain_point_percentages'].get(pain_point, 0)
+#         st.markdown(f"""
+#         <div style="padding: 10px; margin: 8px 0; background: #f0f0f0; border-radius: 6px; border-left: 4px solid #D85A30;">
+#             <strong>{idx}. {pain_point}</strong><br>
+#             <small>Frequency: {count} mentions ({percentage:.1f}% of reviews) | Priority: {pain_stats['priority_distribution'].get('HIGH', 0)} HIGH</small>
+#         </div>
+#         """, unsafe_allow_html=True)
+#     
+#     # Show sample reviews with extracted pain points
+#     st.markdown("**Sample Reviews with Pain Points:**")
+#     for i, review in enumerate(profile.get('review_sample', [])[:2], 1):
+#         with st.expander(f"Review {i} - Rating: {review['rating']}⭐"):
+#             st.markdown(f"*{review['review_text'][:200]}...*")
+#             if review['pain_points']:
+#                 st.markdown(f"**Extracted Pain Points:** {', '.join(review['pain_points'])}")
+#             else:
+#                 st.markdown("*No pain points detected in this review*")
+
 # RESULTS DISPLAY
 if st.session_state.results:
         st.divider()
@@ -412,13 +542,13 @@ if st.session_state.results:
 
         st.divider()
         
-        st.markdown('<h4 class="agent-analytics">Agent Analytics</h4>', unsafe_allow_html=True)
-        r1, r2, r3 = st.columns(3)
-        r1.metric("Trust Retained", f"{int(st.session_state.results['trust']['score']*100)}%")
-        r2.metric("Recommended Intensity", rec_intensity.upper())
-        r3.metric("Response Status", st.session_state.results['trust']['status'])
+        # st.markdown('<h4 class="agent-analytics">Agent Analytics</h4>', unsafe_allow_html=True)
+        # r1, r2, r3 = st.columns(3)
+        # r1.metric("Trust Retained", f"{int(st.session_state.results['trust']['score']*100)}%")
+        # r2.metric("Recommended Intensity", rec_intensity.upper())
+        # r3.metric("Response Status", st.session_state.results['trust']['status'])
         
-        st.markdown(f'<span class="agent-analytics">**Researcher Commentary:** The AI has evaluated all intensity levels and recommends **{rec_intensity}** scarcity intensity as optimal for the **{st.session_state.results["category"]}** category to maximize conversion while maintaining authenticity.</span>', unsafe_allow_html=True)
+        # st.markdown(f'<span class="agent-analytics">**Researcher Commentary:** The AI has evaluated all intensity levels and recommends **{rec_intensity}** scarcity intensity as optimal for the **{st.session_state.results["category"]}** category to maximize conversion while maintaining authenticity.</span>', unsafe_allow_html=True)
 else:
     st.markdown("""
     <div style="text-align: center; padding: 60px; color: grey;">
@@ -429,4 +559,4 @@ else:
     """, unsafe_allow_html=True)
 
 # --- ABOUT SECTION ---
-st.markdown("<p style='text-align: center; color: grey; font-size: 12px;'>NeuroMark AI · Final Year Research Demo · BSc Data Science</p>", unsafe_allow_html=True)
+# st.markdown("<p style='text-align: center; color: grey; font-size: 12px;'>NeuroMark AI · Final Year Research Demo · BSc Data Science</p>", unsafe_allow_html=True)

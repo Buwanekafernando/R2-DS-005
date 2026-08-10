@@ -17,3 +17,9 @@ def test_calibrate_trust_level():
     result = agent.calibrate_trust_level("Normal copy")
     assert "status" in result
     assert "score" in result
+
+
+def test_trained_model_is_available():
+    agent = ScarcityAgent(api_key="test_key")
+    assert agent.model_path.exists()
+    assert agent.local_model is not None

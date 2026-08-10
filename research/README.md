@@ -42,7 +42,22 @@ As per your research objective, you need to measure:
    ```bash
    pip install -r requirements.txt
    ```
-2. Run the demonstration:
+
+2. Set up xAI API key (for AI-powered generation):
+   - Get your API key from [xAI Console](https://console.x.ai/)
+   - Add it to the `.env` file in the project root:
+   ```
+   XAI_API_KEY=your_actual_api_key_here
+   ```
+
+3. Run the demonstration:
    ```bash
    python main.py
    ```
+
+4. Or launch the interactive UI:
+   ```bash
+   streamlit run app.py
+   ```
+
+**Note:** Without the xAI API key, the agent will use heuristic fallback methods that are now more creative and varied.
