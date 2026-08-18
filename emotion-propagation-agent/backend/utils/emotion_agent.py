@@ -9,7 +9,7 @@ import requests
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # If this model ever stops working, just change this one line.
 # Alternatives: "openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 
 PRODUCT_CATEGORIES = [
     "Baby",
@@ -118,23 +118,22 @@ def generate_with_groq(prompt: str, model_name: str = DEFAULT_GROQ_MODEL) -> str
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.9,
-                "max_completion_tokens": 300,
+                "max_completion_tokens": 800,
+                "reasoning_effort": "low",
             },
             timeout=60,
         )
         response.raise_for_status()
         payload = response.json()
     except requests.RequestException as exc:
-        raise RuntimeError(
-            "Groq LLM service is not available. Check your API key and internet connection."
-        ) from exc
+        raise RuntimeError(f"Groq request error: {exc}") from exc
     except ValueError as exc:
         raise RuntimeError("Groq returned an invalid response.") from exc
 
     try:
         message = str(payload["choices"][0]["message"]["content"]).strip()
     except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError("Groq returned an unexpected response format.") from exc
+         raise RuntimeError(f"Groq response format error: {payload}") from exc
 
     if not message:
         raise RuntimeError("Groq returned an empty response.")
@@ -204,7 +203,7 @@ def build_marketing_prompt(
             )
 
     return (
-        "You are writing a concise product marketing message for a research prototype.\n"
+        "You are a marketing copywriter abd writing a concise product marketing message for a marketing campaign.\n"
         "Generate one short marketing message.\n"
         f"The message must strongly express the target emotion: {target_emotion}.\n"
         f"To express {target_emotion}, convey: {signals['convey']}.\n"
