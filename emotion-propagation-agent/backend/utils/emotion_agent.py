@@ -54,12 +54,12 @@ VISUAL_SUGGESTIONS = {
         "layout_mood": "Thrill-seeking, high-impact, passionate, and fast-paced",
     },
     "trust": {
-        "palette": "Blue, Pink, navy",
+        "palette": "Blue, Green",
         "image_style": "High-realism human photography, authentic user-generated content (UGC), clear product feature shots",
         "layout_mood": "High media richness, transparent, predictable, and credible",
     },
     "confidence": {
-        "palette": "Purple,black, gold, deep blue",
+        "palette": "Purple,black,deep blue",
         "image_style": "Strong upright posture, neat professional clothing, modern background with sharp angles",
         "layout_mood": "Bold, strong, and modern",
     },
