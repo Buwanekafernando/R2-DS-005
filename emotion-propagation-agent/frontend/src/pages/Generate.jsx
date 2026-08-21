@@ -113,7 +113,7 @@ export default function Generate() {
         category: payload.category,
         target_audience: payload.target_audience,
         features: payload.features,
-        target_emotions: ["joy", "excitement", "trust", "confidence"],
+        target_emotions:recommendedEmotionByCategory[form.category],
       });
       setVariations(data.variations || []);
       setBackendOnline(true);

@@ -23,6 +23,16 @@ const targetEmotions = [
   "neutral",
 ];
 
+const RECOMMENDED_EMOTIONS = {
+  Baby: ["trust", "relief", "joy"],
+  Beauty: ["confidence", "trust", "joy"],
+  Apparel: ["joy", "excitement"],
+  Electronics: ["excitement", "joy"],
+  Sports: ["excitement", "confidence", "trust"],
+  Pet: ["joy", "trust"],
+  Groceries: ["trust", "relief", "joy"],
+};
+
 function inputClassName(hasError) {
   return [
     "w-full rounded-xl border bg-white px-3 py-2 text-sm shadow-sm outline-none transition",
@@ -176,6 +186,41 @@ export default function ProductForm({
               </option>
             ))}
           </select>
+          {form.category && RECOMMENDED_EMOTIONS[form.category] ? (
+  <div className="mt-2">
+    <div className="mb-1.5 text-xs font-medium text-slate-500">
+      Recommended for {form.category}:
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {RECOMMENDED_EMOTIONS[form.category].map((emo, i) => {
+        const isActive = form.target_emotion === emo;
+        return (
+          <button
+            key={emo}
+            type="button"
+            onClick={() => {
+              setForm((prev) => ({ ...prev, target_emotion: emo }));
+              if (onEmotionTouched) onEmotionTouched();
+            }}
+            className={
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition " +
+              (isActive
+                ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50")
+            }
+          >
+            <span className="capitalize">{emo}</span>
+            {i === 0 ? (
+              <span className="text-[10px] font-semibold text-indigo-500">
+
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+) : null}
           {errors.target_emotion ? (
             <div className="mt-1 text-xs text-rose-600">
               {errors.target_emotion}
