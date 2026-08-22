@@ -35,9 +35,9 @@ PROJECT_EMOTIONS = [
 CATEGORY_EMOTION_MAP = {
     "Baby": ["trust", "relief", "joy"],
     "Beauty": ["confidence", "trust", "joy"],
-    "Apparel": ["joy", "excitement"],
-    "Electronics": ["excitement", "joy"],
-    "Sports": ["excitement", "confidence", "trust"],
+    "Apparel": ["joy", "excitement","admiration"],
+    "Electronics": ["excitement", "joy","admiration"],
+    "Sports": ["excitement", "confidence", "curiosity"],
     "Pet": ["joy", "trust"],
     "Groceries": ["trust", "relief", "joy"],
 }
@@ -74,7 +74,7 @@ VISUAL_SUGGESTIONS = {
         "layout_mood": "Soothing, harmonious, spacious, and reassuring",
     },
     "admiration": {
-        "palette": "Gold, black, ivory",
+        "palette": "Gold, black, red",
         "image_style": "Premium product shots, elegant backgrounds, refined details",
         "layout_mood": "Elegant, premium, and aspirational",
     },
