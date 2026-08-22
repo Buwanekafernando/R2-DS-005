@@ -5,17 +5,80 @@ const API_BASE = "http://localhost:5000";
 const CATEGORIES = ["Baby", "Beauty", "Apparel", "Electronics", "Sports", "Pet", "Groceries"];
 const EMOTIONS = ["joy", "excitement", "trust", "confidence", "curiosity", "relief", "admiration", "neutral"];
 
-// Auto-fill emotion from category (mirrors backend CATEGORY_EMOTION_MAP first choice).
-const CATEGORY_DEFAULT_EMOTION = {
-  Baby: "trust", Beauty: "confidence", Apparel: "joy", Electronics: "excitement",
-  Sports: "excitement", Pet: "joy", Groceries: "trust",
+// Literature-backed recommended emotions per category.
+const recommendedEmotionByCategory = {
+  Baby: ["trust", "relief", "joy"],
+  Beauty: ["confidence", "trust", "joy"],
+  Apparel: ["joy", "excitement"],
+  Electronics: ["excitement", "joy"],
+  Sports: ["excitement", "confidence", "trust"],
+  Pet: ["joy", "trust"],
+  Groceries: ["trust", "relief", "joy"],
 };
+
+// First recommended emotion = the auto-selected default for a category.
+const defaultEmotionFor = (category) =>
+  (recommendedEmotionByCategory[category] || [])[0] || "";
 
 function Field({ label, value }) {
   return (
     <div className="border rounded-lg px-3 py-2">
       <div className="text-xs uppercase text-gray-400">{label}</div>
       <div className="text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+// Compact result card, reused for single run and each variation.
+function ResultCard({ result }) {
+  return (
+    <div className="space-y-4">
+      <div className="border rounded-xl p-4">
+        <div className="text-xs uppercase text-gray-400 mb-1">Emotion copy (gain-framed)</div>
+        <p className="mb-2">{result.emotion_copy}</p>
+        <div className="text-sm text-gray-600">
+          Target: <b>{result.target_emotion}</b> · Detected: <b>{result.emotion_detected}</b>{" "}
+          {result.emotion_matched
+            ? <span className="text-green-600">✓ matched</span>
+            : <span className="text-amber-600">kept best</span>}{" "}
+          · attempts: {result.attempts_used}/3
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-4">
+        <div className="text-xs uppercase text-gray-400 mb-1">Loss-framed message</div>
+        <p className="mb-3">{result.loss_message}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Gain Sentiment" value={result.gain_sentiment} />
+          <Field label="Loss Sentiment" value={result.loss_sentiment} />
+          <Field label="FOMO Score" value={`${result.fomo_score} loss keywords`} />
+          <Field label="Sentiment Change"
+            value={result.sentiment_change > 0 ? `+${result.sentiment_change}` : result.sentiment_change} />
+        </div>
+        <div className="mt-3">
+          <Field label="Tone Safety Check" value={result.tone_label} />
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-4">
+        <div className="text-xs uppercase text-gray-400 mb-1">Emotion survival check</div>
+        <div className="text-sm text-gray-600">
+          After loss framing, top emotion is <b>{result.emotion_after_loss}</b>{" "}
+          (target score {result.emotion_after_score}).{" "}
+          {result.emotion_survived
+            ? <span className="text-green-600">✓ emotion survived</span>
+            : <span className="text-red-600">✗ emotion shifted</span>}
+        </div>
+      </div>
+
+      {result.visual_suggestions && (
+        <div className="border rounded-xl p-4 text-sm text-gray-600">
+          <div className="text-xs uppercase text-gray-400 mb-1">Visual guidance</div>
+          <div>Color Palette: {result.visual_suggestions.palette}</div>
+          <div className="mt-1">Image style: {result.visual_suggestions.image_style}</div>
+          <div>Layout Mood: {result.visual_suggestions.layout_mood}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -30,22 +93,52 @@ export default function Integrate() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(null);           // single run
+  const [variations, setVariations] = useState([]);     // multi run
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  // recommended emotions for the currently selected category
+  const recommended = recommendedEmotionByCategory[form.category] || [];
+
+  // one pipeline call for a given emotion
+  const callPipeline = async (emotion) => {
+    const res = await fetch(`${API_BASE}/api/pipeline`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, target_emotion: emotion }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  };
+
   const runPipeline = async () => {
     if (!form.product_name.trim()) { setError("Please enter a product name."); return; }
-    setLoading(true); setError(""); setResult(null);
+    setLoading(true); setError(""); setResult(null); setVariations([]);
     try {
-      const res = await fetch(`${API_BASE}/api/pipeline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
-      setResult(data);
+      setResult(await callPipeline(form.target_emotion));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate one variation per recommended emotion for this category.
+  const generateVariations = async () => {
+    if (!form.product_name.trim()) { setError("Please enter a product name."); return; }
+    const emotions = recommendedEmotionByCategory[form.category] || [];
+    if (emotions.length === 0) { setError("No recommended emotions for this category."); return; }
+
+    setLoading(true); setError(""); setResult(null); setVariations([]);
+    try {
+      const results = [];
+      // sequential (not Promise.all) to stay under the Groq rate limit
+      for (const emotion of emotions) {
+        results.push(await callPipeline(emotion));
+      }
+      setVariations(results);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,7 +155,7 @@ export default function Integrate() {
       </p>
 
       {/* ---- Input ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
         <div>
           <label className="block text-sm font-medium mb-1">Product name</label>
           <input className="w-full border rounded-lg px-3 py-2" value={form.product_name}
@@ -73,7 +166,7 @@ export default function Integrate() {
           <select className="w-full border rounded-lg px-3 py-2" value={form.category}
             onChange={(e) => {
               const category = e.target.value;
-              setForm({ ...form, category, target_emotion: CATEGORY_DEFAULT_EMOTION[category] || "" });
+              setForm({ ...form, category, target_emotion: defaultEmotionFor(category) });
             }}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -89,6 +182,27 @@ export default function Integrate() {
             onChange={update("target_emotion")}>
             {EMOTIONS.map((e) => <option key={e} value={e}>{e}</option>)}
           </select>
+
+          {/* ---- Recommendation chips ---- */}
+          {recommended.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">Recommended for {form.category}:</span>
+              {recommended.map((emo) => (
+                <button
+                  key={emo}
+                  type="button"
+                  onClick={() => setForm({ ...form, target_emotion: emo })}
+                  className={`text-xs rounded-full px-3 py-1 border transition ${
+                    form.target_emotion === emo
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  {emo}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium mb-1">Key features</label>
@@ -97,64 +211,33 @@ export default function Integrate() {
         </div>
       </div>
 
-      <button onClick={runPipeline} disabled={loading}
-        className="bg-black text-white rounded-lg px-5 py-2 disabled:opacity-50">
-        {loading ? "Running pipeline…" : "Run pipeline"}
-      </button>
+      <div className="flex flex-wrap gap-3 mt-4">
+        <button onClick={runPipeline} disabled={loading}
+          className="bg-black text-white rounded-lg px-5 py-2 disabled:opacity-50">
+          {loading ? "Running…" : "Generate"}
+        </button>
+        <button onClick={generateVariations} disabled={loading}
+          className="border border-black rounded-lg px-5 py-2 disabled:opacity-50">
+          {loading ? "Generating…" : `Generate variations (${recommended.length})`}
+        </button>
+      </div>
 
       {error && <p className="text-red-600 mt-4">{error}</p>}
 
-      {/* ---- Output ---- */}
-      {result && (
-        <div className="mt-8 space-y-4">
-          {/* Stage 1: emotion copy (the gain-framed message) */}
-          <div className="border rounded-xl p-4">
-            <div className="text-xs uppercase text-gray-400 mb-1">Emotion copy (gain-framed)</div>
-            <p className="mb-2">{result.emotion_copy}</p>
-            <div className="text-sm text-gray-600">
-              Target: <b>{result.target_emotion}</b> · Detected: <b>{result.emotion_detected}</b>{" "}
-              {result.emotion_matched
-                ? <span className="text-green-600">✓ matched</span>
-                : <span className="text-amber-600">kept best</span>}{" "}
-              · attempts: {result.attempts_used}/3
-            </div>
-          </div>
+      {/* ---- Single result ---- */}
+      {result && <div className="mt-8"><ResultCard result={result} /></div>}
 
-          {/* Stage 2: friend's loss agent — all six outputs */}
-          <div className="border rounded-xl p-4">
-            <div className="text-xs uppercase text-gray-400 mb-1">Loss-framed message</div>
-            <p className="mb-3">{result.loss_message}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Gain Sentiment" value={result.gain_sentiment} />
-              <Field label="Loss Sentiment" value={result.loss_sentiment} />
-              <Field label="FOMO Score" value={`${result.fomo_score} loss keywords`} />
-              <Field label="Sentiment Change"
-                value={result.sentiment_change > 0 ? `+${result.sentiment_change}` : result.sentiment_change} />
+      {/* ---- Variations (one per recommended emotion) ---- */}
+      {variations.length > 0 && (
+        <div className="mt-8 space-y-8">
+          {variations.map((v, i) => (
+            <div key={i}>
+              <div className="text-sm font-semibold mb-2">
+                Variation {i + 1} — target: {v.target_emotion}
+              </div>
+              <ResultCard result={v} />
             </div>
-            <div className="mt-3">
-              <Field label="Tone Safety Check" value={result.tone_label} />
-            </div>
-          </div>
-
-          {/* Stage 3: emotion survival */}
-          <div className="border rounded-xl p-4">
-            <div className="text-xs uppercase text-gray-400 mb-1">Emotion survival check</div>
-            <div className="text-sm text-gray-600">
-              After loss framing, top emotion is <b>{result.emotion_after_loss}</b>{" "}
-              (target score {result.emotion_after_score}).{" "}
-              {result.emotion_survived
-                ? <span className="text-green-600">✓ emotion survived</span>
-                : <span className="text-red-600">✗ emotion shifted</span>}
-            </div>
-          </div>
-
-          {result.visual_suggestions && (
-            <div className="border rounded-xl p-4 text-sm text-gray-600">
-              <div className="text-xs uppercase text-gray-400 mb-1">Visual guidance</div>
-              <div>Palette: {result.visual_suggestions.palette}</div>
-              <div>Mood: {result.visual_suggestions.layout_mood}</div>
-            </div>
-          )}
+          ))}
         </div>
       )}
     </div>
