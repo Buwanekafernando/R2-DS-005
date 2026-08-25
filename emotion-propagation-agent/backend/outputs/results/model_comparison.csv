@@ -1,0 +1,4 @@
+Model,Type,Accuracy,Macro F1,Weighted F1
+Logistic Regression (TF-IDF),Linear (baseline),0.585,0.5175,0.5928
+Fine-tuned RoBERTa,Non-linear (transformer),0.645,0.576,0.6491
+Improvement,,0.06,0.0585,0.0563
