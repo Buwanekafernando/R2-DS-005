@@ -1,0 +1,24 @@
+# ── Shared ──
+fastapi
+uvicorn
+pydantic
+python-dotenv
+requests
+
+# ── Component 1 (Dual-System Reasoning Agent) ──
+torch
+transformers
+nltk
+joblib
+numpy
+
+# ── Component 3 (Scarcity Optimization Agent) ──
+scikit-learn==1.3.2
+rich
+pandas
+
+# ── UI ──
+streamlit
+
+# ── Dev ──
+pytest
