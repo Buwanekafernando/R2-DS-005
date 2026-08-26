@@ -32,6 +32,14 @@ AGE_OPTIONS        = [
     "35 – 44 years", "45 – 54 years", "55 and above"
 ]
 
+DISTRICTS = [
+    "Ampara","Anuradhapura","Badulla","Batticaloa","Colombo",
+    "Galle","Gampaha","Hambantota","Jaffna","Kalutara","Kandy",
+    "Kegalle","Kilinochchi","Kurunegala","Mannar","Matale",
+    "Matara","Monaragala","Mullaitivu","Nuwara Eliya","Polonnaruwa",
+    "Puttalam","Ratnapura","Trincomalee","Vavuniya"
+]
+
 OCCUPATION_OPTIONS = [
     "Student",
     "Private sector employee",

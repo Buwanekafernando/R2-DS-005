@@ -48,8 +48,7 @@ class DualSystemAgent:
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
-        # ── Load your trained classifier from Step 1 ─────
-        # (unchanged from your original code)
+        # ── Load your trained classifier from Step 1 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model     = AutoModelForSequenceClassification.from_pretrained(
             model_path
