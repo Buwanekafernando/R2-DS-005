@@ -26,9 +26,7 @@ GROK_MODEL = "grok-3"
 print(f"Grok client ready | Model: {GROK_MODEL}")
 
 
-# ════════════════════════════════════════════════════════
-# GENERATION
-# ════════════════════════════════════════════════════════
+
 
 def generate_copy(prompt, retries=3):
     """Single entry point for copy generation. Called by src/agent.py"""
@@ -89,9 +87,7 @@ def generate_copy(prompt, retries=3):
     return None
 
 
-# ════════════════════════════════════════════════════════
-# PROMPT BUILDERS
-# ════════════════════════════════════════════════════════
+
 
 def build_emotional_prompt(product_text, category, confidence):
     if confidence > 0.85:
