@@ -5,6 +5,8 @@ import Component1Page from "./pages/Component1Page.jsx";
 import Component3Page from "./pages/Component3Page.jsx";
 import Component24Page from "./pages/Component24Page.jsx";
 import FullPipelinePage from "./pages/FullPipelinePage.jsx";
+import BatchPage from "./pages/BatchPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 
 export default function App() {
   const [tab, setTab] = useState("home");
@@ -20,6 +22,8 @@ export default function App() {
 
       {tab === "home" && <HomePage onGetStarted={() => setTab("pipeline")} />}
       {tab === "pipeline" && <FullPipelinePage />}
+      {tab === "batch" && <BatchPage />}
+      {tab === "history" && <HistoryPage />}
       {tab === "component1" && <Component1Page onResult={setC1Result} />}
       {tab === "component3" && <Component3Page baseCopy={baseCopy} />}
       {tab === "component24" && <Component24Page baseCopy={baseCopy} />}

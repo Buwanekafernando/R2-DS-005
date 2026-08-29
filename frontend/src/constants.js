@@ -48,6 +48,37 @@ export const CATEGORIES = [
 ];
 export const EMOTIONS = ["joy", "excitement", "trust", "confidence", "curiosity", "relief", "admiration", "neutral"];
 
+// Mirrors the backend's CATEGORY_EMOTION_MAP in src/component2/emotion_agent.py
+// exactly — keep these in sync. First entry in each list is the auto-selected
+// default for that category.
+export const CATEGORY_EMOTION_MAP = {
+  "Baby": ["trust", "relief", "joy"],
+  "Beauty": ["confidence", "trust", "joy"],
+  "Apparel": ["joy", "excitement", "admiration"],
+  "Electronics": ["excitement", "joy", "admiration"],
+  "Sports": ["excitement", "confidence", "curiosity"],
+  "Pet Products": ["joy", "trust"],
+  "Grocery": ["trust", "relief", "joy"],
+  "Home & Kitchen": ["trust", "relief", "confidence"],
+  "Automotive": ["confidence", "excitement", "trust"],
+  "Industrial": ["trust", "confidence"],
+  "Unknown": ["trust", "joy"],
+};
+
+export const defaultEmotionFor = (category) =>
+  (CATEGORY_EMOTION_MAP[category] || [])[0] || "";
+
+// Plain-language product names for the four research components — a
+// small-business user never needs to know these are "Component 1/2/3/4",
+// just what each one actually does for their marketing.
+export const FEATURE_NAMES = {
+  component1: "Buying Psychology",
+  component2: "Emotional Appeal",
+  component3: "Urgency & Scarcity",
+  component4: "Loss-Framed Messaging",
+  component24: "Emotional Appeal & Loss Messaging",
+};
+
 export const defaultDemographics = () => ({
   gender: GENDER_OPTIONS[0],
   age_range: AGE_OPTIONS[0],
