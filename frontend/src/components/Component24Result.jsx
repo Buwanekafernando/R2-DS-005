@@ -1,5 +1,6 @@
 import CopyButton from "./CopyButton.jsx";
 import ResultCode from "./ResultCode.jsx";
+import Tooltip from "./Tooltip.jsx";
 
 function Field({ label, value }) {
   return (
@@ -22,7 +23,7 @@ export default function Component24Result({ result, showJson = true }) {
   return (
     <div className="space-y-4">
       <div className="nm-card" style={{ margin: 0 }}>
-        <div className="nm-card-header"><span className="nm-card-title">2 → 4 · Emotion Propagation + Loss Framing</span></div>
+        <div className="nm-card-header"><span className="nm-card-title">Emotional Appeal & Loss-Framed Messaging</span></div>
       </div>
 
       <div className="border rounded-xl p-4" style={{ background: "var(--purple-50)", borderColor: "var(--purple-100)" }}>
@@ -80,18 +81,18 @@ export default function Component24Result({ result, showJson = true }) {
       <div className="border rounded-xl p-4">
         <div className="text-xs uppercase text-gray-400 mb-3">Sentiment & Safety Metrics</div>
         <div className="metrics-row">
-          <div className="metric-box"><div className="metric-val">{result.gain_sentiment.toFixed(3)}</div><div className="metric-lbl">Gain Sentiment</div></div>
-          <div className="metric-box"><div className="metric-val">{result.loss_sentiment.toFixed(3)}</div><div className="metric-lbl">Loss Sentiment</div></div>
-          <div className="metric-box"><div className="metric-val">{result.fomo_score}</div><div className="metric-lbl">FOMO Score</div></div>
+          <div className="metric-box"><div className="metric-val">{result.gain_sentiment.toFixed(3)}</div><div className="metric-lbl">Gain Sentiment<Tooltip text="How positive the emotional version sounds, from -1 (very negative) to +1 (very positive)." /></div></div>
+          <div className="metric-box"><div className="metric-val">{result.loss_sentiment.toFixed(3)}</div><div className="metric-lbl">Loss Sentiment<Tooltip text="How positive the loss-framed version sounds, from -1 (very negative) to +1 (very positive)." /></div></div>
+          <div className="metric-box"><div className="metric-val">{result.fomo_score}</div><div className="metric-lbl">FOMO Score<Tooltip text={'FOMO = "Fear Of Missing Out." Counts urgency phrases like "don\'t miss out" or "limited time" in the loss-framed version.'} /></div></div>
         </div>
         <div className="metrics-row" style={{ marginTop: 10 }}>
           <div className="metric-box">
             <div className="metric-val">{result.sentiment_change > 0 ? `+${result.sentiment_change.toFixed(3)}` : result.sentiment_change.toFixed(3)}</div>
-            <div className="metric-lbl">Sentiment Change</div>
+            <div className="metric-lbl">Sentiment Change<Tooltip text="How much more (or less) positive the loss-framed version is compared to the emotional version." /></div>
           </div>
           <div className="metric-box" style={{ flex: 2 }}>
             <div className="metric-val" style={{ fontSize: 14 }}>{result.tone_label}</div>
-            <div className="metric-lbl">Tone Safety Check</div>
+            <div className="metric-lbl">Tone Safety Check<Tooltip text="A safety check that flags if the loss-framed version has gotten too negative or guilt-trippy to feel safe for everyday use." /></div>
           </div>
         </div>
       </div>

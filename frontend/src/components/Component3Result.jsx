@@ -1,5 +1,6 @@
 import CopyButton from "./CopyButton.jsx";
 import ResultCode from "./ResultCode.jsx";
+import Tooltip from "./Tooltip.jsx";
 
 const INTENSITY_BG = { low: "var(--teal-50)", medium: "var(--amber-50)", high: "var(--coral-50)" };
 const INTENSITY_BORDER = { low: "var(--teal-100)", medium: "var(--amber-100)", high: "var(--coral-100)" };
@@ -15,7 +16,7 @@ export default function Component3Result({ data, showJson = true, rawData = null
     <>
       <div className="nm-card" style={{ animation: "fadeUp .4s ease" }}>
         <div className="nm-card-header">
-          <span className="nm-card-title">3 · Scarcity Optimization — Strategies</span>
+          <span className="nm-card-title">Urgency & Scarcity — Strategies</span>
           <span className="nm-badge" style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}>
             ✓ AI Analysed
           </span>
@@ -64,14 +65,14 @@ export default function Component3Result({ data, showJson = true, rawData = null
           </div>
 
           <div className="metrics-row">
-            <div className="metric-box"><div className="metric-val">{(data.suitability_score * 100).toFixed(0)}%</div><div className="metric-lbl">Fits This Product</div></div>
-            <div className="metric-box"><div className="metric-val">{(data.trust_score * 100).toFixed(0)}%</div><div className="metric-lbl">Feels Trustworthy</div></div>
-            <div className="metric-box"><div className="metric-val">{data.recommended_intensity?.toUpperCase()}</div><div className="metric-lbl">Recommended Level</div></div>
+            <div className="metric-box"><div className="metric-val">{(data.suitability_score * 100).toFixed(0)}%</div><div className="metric-lbl">Fits This Product<Tooltip text="How well urgency/scarcity messaging suits this type of product in general." /></div></div>
+            <div className="metric-box"><div className="metric-val">{(data.trust_score * 100).toFixed(0)}%</div><div className="metric-lbl">Feels Trustworthy<Tooltip text="How believable this urgency messaging will feel to a real customer. A lower score isn't an error — it's a heads-up to use this messaging carefully." /></div></div>
+            <div className="metric-box"><div className="metric-val">{data.recommended_intensity?.toUpperCase()}</div><div className="metric-lbl">Recommended Level<Tooltip text="How strongly to push urgency: Low is subtle, High is aggressive (e.g. 'only 2 left!')." /></div></div>
           </div>
 
           <div style={{ marginTop: 14 }}>
             <span className="nm-badge" style={{ background: "var(--amber-50)", color: "var(--amber-600)", border: "1px solid var(--amber-100)", marginRight: 6 }}>SCARCITY PRINCIPLE</span>
-            <span className="nm-badge" style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}>RESEARCH COMPONENT 3</span>
+            <span className="nm-badge" style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}>URGENCY & SCARCITY</span>
           </div>
         </div>
       </div>

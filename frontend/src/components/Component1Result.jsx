@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Tooltip from "./Tooltip.jsx";
 import CopyButton from "./CopyButton.jsx";
 import ResultCode from "./ResultCode.jsx";
 import { apiPost } from "../api.js";
@@ -53,7 +54,7 @@ export default function Component1Result({ result, showJson = true, productText 
       {/* Classification Result */}
       <div className="nm-card" style={{ animation: "fadeUp .4s ease" }}>
         <div className="nm-card-header">
-          <span className="nm-card-title">1 · Dual-System Reasoning — Classification Result</span>
+          <span className="nm-card-title">Buying Psychology — Classification Result</span>
           <span className="nm-badge" style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}>
             ✓ AI Analysed
           </span>
@@ -61,7 +62,10 @@ export default function Component1Result({ result, showJson = true, productText 
         <div className="nm-card-body">
           <div className="clf-badge" style={{ background: bg, borderColor: bdr }}>
             <div className="clf-mode" style={{ color: txt }}>{modeLabel}</div>
-            <div style={{ fontSize: 11, color: txt, marginBottom: 4 }}>Confidence</div>
+            <div style={{ fontSize: 11, color: txt, marginBottom: 4 }}>
+              Confidence
+              <Tooltip text="How sure the AI is about this classification. Higher means clearer signals in your product description — it's not a quality score for the copy itself." />
+            </div>
             <div className="clf-bar-wrap">
               <div className="clf-bar" style={{ width: `${clf.confidence * 100}%`, background: bar }} />
             </div>
@@ -103,6 +107,7 @@ export default function Component1Result({ result, showJson = true, productText 
               <div className="copy-text" style={{ color: "#3d2200" }}>{gen.emotional.text}</div>
               <div className="copy-meta" style={{ color: "var(--amber-600)" }}>
                 Tone Score: {gen.emotional.quality.sentiment_compound.toFixed(2)} · Content Quality: {(gen.emotional.quality.mode_alignment * 100).toFixed(0)}%
+                <Tooltip text="Tone Score: how positive the wording sounds (-1 to +1). Content Quality: how well this copy matches an emotional selling style." />
               </div>
               <CopyButton text={gen.emotional.text} />
             </div>
@@ -117,6 +122,7 @@ export default function Component1Result({ result, showJson = true, productText 
               <div className="copy-text" style={{ color: "#0a2d52" }}>{gen.rational.text}</div>
               <div className="copy-meta" style={{ color: "var(--blue-800)" }}>
                 Tone Score: {gen.rational.quality.sentiment_compound.toFixed(2)} · Content Quality: {(gen.rational.quality.mode_alignment * 100).toFixed(0)}%
+                <Tooltip text="Tone Score: how positive the wording sounds (-1 to +1). Content Quality: how well this copy matches a fact-based, logical selling style." />
               </div>
               <CopyButton text={gen.rational.text} />
             </div>
@@ -140,7 +146,7 @@ export default function Component1Result({ result, showJson = true, productText 
           </div>
 
           <div className="metrics-row">
-            <div className="metric-box"><div className="metric-val">{(clf.confidence * 100).toFixed(0)}%</div><div className="metric-lbl">AI Confidence</div></div>
+            <div className="metric-box"><div className="metric-val">{(clf.confidence * 100).toFixed(0)}%</div><div className="metric-lbl">AI Confidence<Tooltip text="How sure the AI is about the emotional-vs-rational classification." /></div></div>
             <div className="metric-box"><div className="metric-val">{(gen.emotional.quality.mode_alignment * 100).toFixed(0)}%</div><div className="metric-lbl">Emotional Quality</div></div>
             <div className="metric-box"><div className="metric-val">{(gen.rational.quality.mode_alignment * 100).toFixed(0)}%</div><div className="metric-lbl">Rational Quality</div></div>
           </div>

@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../api.js";
+import { FEATURE_NAMES } from "../constants.js";
 
 const PRIMARY_TABS = [
   { id: "home", label: "Home" },
   { id: "pipeline", label: "Main Application" },
+  { id: "batch", label: "Batch Mode" },
+  { id: "history", label: "History" },
 ];
 const ADVANCED_TABS = [
-  { id: "component1", label: "Buying Psychology" },
-  { id: "component3", label: "Emotional Appeal" },
-  { id: "component24", label: "Urgency & Scarcity & Loss-Framed Messaging" },
+  { id: "component1", label: FEATURE_NAMES.component1 },
+  { id: "component3", label: FEATURE_NAMES.component3 },
+  { id: "component24", label: FEATURE_NAMES.component24 },
 ];
 
 export default function Nav({ active, onChange }) {
@@ -29,7 +32,7 @@ export default function Nav({ active, onChange }) {
         <span className="nm-logo-dot" />
         NeuroMark AI
         <span className="nm-badge" style={{ background: "var(--purple-50)", color: "var(--purple-800)", border: "1px solid var(--purple-100)" }}>
-          4-Agent System
+          AI Marketing Toolkit
         </span>
       </div>
 
