@@ -119,6 +119,13 @@ class ChannelVariantsInput(BaseModel):
     winning_copy: str
 
 
+class FinalRecommendation(BaseModel):
+    """The single synthesized answer — combines all four agents into one final message."""
+    recommendation : str
+    rationale      : str
+    best_for        : str
+
+
 class OrchestratorResult(BaseModel):
     """Full response for POST /generate-strategy"""
     product      : str
@@ -126,3 +133,4 @@ class OrchestratorResult(BaseModel):
     component1   : Component1Summary
     component3   : Component3Summary
     component24  : Component24Summary
+    final_recommendation : FinalRecommendation

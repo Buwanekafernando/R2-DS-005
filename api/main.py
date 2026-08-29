@@ -24,6 +24,7 @@ if not os.getenv("GROQ_API_KEY"):
 
 import time
 import json
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -34,11 +35,38 @@ from api.schemas import (
     ScarcityAnalyzeInput, PainPointExtractInput, ChannelVariantsInput,
 )
 from src.component1.agent import DualSystemAgent
-from src.component1.generator import generate_channel_variants
+from src.component1.generator import generate_channel_variants, generate_final_recommendation
 from src.component3.scarcity_agent import ScarcityAgent
 from src.component3.pain_point_extractor import extract_pain_points_detailed
 from src.component2.model_loader import load_emotion_model
 from src.component24_pipeline import run_component24_pipeline
+
+logger = logging.getLogger("neuromarketing")
+logging.basicConfig(level=logging.INFO)
+
+
+def friendly_error(context: str, exc: Exception, status_code: int = 500) -> HTTPException:
+    """
+    Logs the real technical error server-side (for you to debug) but
+    returns a plain-language message to the person using the app — a raw
+    Python exception string means nothing to a non-technical business
+    owner and just damages trust in the product.
+    """
+    logger.error("%s failed: %s", context, exc, exc_info=True)
+
+    exc_text = str(exc).lower()
+    if "api key" in exc_text or "auth" in exc_text or "401" in exc_text:
+        message = "We couldn't connect to our AI service right now. This is usually temporary — please try again in a moment."
+    elif "429" in exc_text or "rate" in exc_text:
+        message = "Our AI service is a bit busy right now. Please wait a few seconds and try again."
+    elif "timeout" in exc_text or "timed out" in exc_text:
+        message = "That took longer than expected and timed out. Please try again."
+    elif "credits" in exc_text or "quota" in exc_text or "billing" in exc_text:
+        message = "Our AI service is temporarily unavailable. Please try again shortly, or contact support if this continues."
+    else:
+        message = f"Something went wrong while {context}. Please try again — if this keeps happening, contact support."
+
+    return HTTPException(status_code=status_code, detail=message)
 
 
 app = FastAPI(
@@ -93,7 +121,7 @@ def get_sample_products():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="sample_products.json not found in dataset/")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load sample products: {str(e)}")
+        raise friendly_error("loading example products", e)
 
 
 # ── Component 1 endpoints (unchanged behaviour, preserved as-is) ──
@@ -112,7 +140,7 @@ def analyze_product(input_data: ProductInput):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Component 1 error: {str(e)}")
+        raise friendly_error("analyzing your product", e)
 
 
 @app.post("/component1/classify-only")
@@ -123,13 +151,13 @@ def classify_only(input_data: ProductInput):
             category=input_data.category,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Classification error: {str(e)}")
+        raise friendly_error("classifying your product", e)
 
 
 @app.post("/component1/batch-analyze")
 def batch_analyze(items: list[ProductInput]):
     if len(items) > 10:
-        raise HTTPException(status_code=400, detail="Maximum 10 products per batch")
+        raise HTTPException(status_code=400, detail="You can analyze up to 10 products at a time. Please split larger lists into smaller batches.")
 
     results = []
     for item in items:
@@ -139,10 +167,17 @@ def batch_analyze(items: list[ProductInput]):
                 category=item.category,
                 demographics=(item.demographics.dict() if item.demographics else None),
             )
-            results.append({"success": True, "data": result})
+            if "error" in result:
+                results.append({"success": False, "error": result["error"], "product": item.product_text})
+            else:
+                results.append({"success": True, "data": result})
         except Exception as e:
-            results.append({"success": False, "error": str(e),
-                             "product": item.product_text})
+            logger.error("Batch item failed for '%s': %s", item.product_text, e, exc_info=True)
+            results.append({
+                "success": False,
+                "error": "Something went wrong analyzing this product. Please try it individually.",
+                "product": item.product_text,
+            })
         time.sleep(0.5)
 
     return {"results": results, "total": len(results)}
@@ -162,7 +197,7 @@ def channel_variants(input_data: ChannelVariantsInput):
             winning_copy=input_data.winning_copy,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Channel variant generation error: {str(e)}")
+        raise friendly_error("generating extra copy formats", e)
 
 
 # ── Component 3 endpoints (new — Component 3 had no API before) ──
@@ -171,7 +206,7 @@ def extract_pain_points(input_data: PainPointExtractInput):
     try:
         return extract_pain_points_detailed(input_data.text)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Pain point extraction error: {str(e)}")
+        raise friendly_error("reading your product description", e)
 
 
 @app.post("/component3/analyze")
@@ -200,7 +235,7 @@ def analyze_scarcity(input_data: ScarcityAnalyzeInput):
             "trust": trust,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Component 3 error: {str(e)}")
+        raise friendly_error("building your scarcity strategy", e)
 
 
 # ── Component 2+4 endpoint (matches original /api/pipeline contract) ──
@@ -217,7 +252,7 @@ def component24_pipeline(payload: dict):
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Component 2/4 error: {str(e)}")
+        raise friendly_error("building your emotional messaging", e)
 
 
 # ── Orchestrator: THIS is the actual C1 -> C2/C3/C4 connection ─────────
@@ -270,6 +305,19 @@ def generate_strategy(input_data: OrchestratorInput):
             base_copy=base_copy,   # Component 1's recommended_copy feeds into Component 2
         )
 
+        # ── Final synthesis: one blended recommendation from all four agents ──
+        final_rec = generate_final_recommendation(
+            product_name=input_data.product_name,
+            category=input_data.category,
+            cognitive_mode=agent_output["cognitive_mode"],
+            strategy=agent_output["strategy"],
+            scarcity_copy=final_copy,
+            scarcity_intensity=recommendation["recommended_intensity"],
+            emotion_copy=c24_result["emotion_copy"],
+            target_emotion=c24_result["target_emotion"],
+            loss_copy=c24_result["loss_message"],
+        )
+
         return {
             "product": input_data.product_name,
             "component1_full": c1_result,
@@ -308,9 +356,10 @@ def generate_strategy(input_data: OrchestratorInput):
                 "emotion_survived": c24_result["emotion_survived"],
                 "visual_suggestions": c24_result["visual_suggestions"],
             },
+            "final_recommendation": final_rec,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Orchestrator error: {str(e)}")
+        raise friendly_error("generating your full strategy", e)
