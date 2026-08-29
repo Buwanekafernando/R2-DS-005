@@ -13,8 +13,8 @@ import { usePersistedState, clearPersisted } from "../usePersistedState.js";
 
 const STAGES = [
   { id: "c1", n: "1", label: "Dual-System\nReasoning" },
-  { id: "c3", n: "3", label: "Scarcity\nOptimization" },
   { id: "c2", n: "2", label: "Emotion\nPropagation" },
+  { id: "c3", n: "3", label: "Scarcity\nOptimization" },
   { id: "c4", n: "4", label: "Loss\nFraming" },
 ];
 
@@ -76,9 +76,9 @@ export default function FullPipelinePage() {
         Main Application — Build Your Strategy
       </h1>
       <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20, maxWidth: 640 }}>
-        Runs all four agents from one product input, then hands you two ready-to-use marketing
+        Runs all four features from one product input, then hands you two ready-to-use marketing
         messages: one built around urgency, one built around emotion and what the customer stands
-        to lose by not buying. The order below (1 → 3 → 2 → 4) is just how the agents connect, not
+        to lose by not buying. The order below (1 → 2 → 3 → 4) is just how the features connect, not
         a ranking — Component 1 runs first and its copy feeds both branches.
       </p>
 

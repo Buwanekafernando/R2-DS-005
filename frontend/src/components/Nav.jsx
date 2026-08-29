@@ -6,9 +6,9 @@ const PRIMARY_TABS = [
   { id: "pipeline", label: "Main Application" },
 ];
 const ADVANCED_TABS = [
-  { id: "component1", label: "Component 1" },
-  { id: "component3", label: "Component 3" },
-  { id: "component24", label: "Component 2+4" },
+  { id: "component1", label: "Buying Psychology" },
+  { id: "component3", label: "Emotional Appeal" },
+  { id: "component24", label: "Urgency & Scarcity & Loss-Framed Messaging" },
 ];
 
 export default function Nav({ active, onChange }) {
