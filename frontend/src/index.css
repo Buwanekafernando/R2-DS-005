@@ -158,3 +158,16 @@ html, body, #root {
   font-size: 12px; padding: 14px; border-radius: var(--radius-sm); overflow-x: auto;
   white-space: pre-wrap; word-break: break-word;
 }
+
+/* Loading spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+ 
+/* Tooltip — hidden by default, visible on hover */
+.tooltip-wrap .tooltip-box {
+  display: none;
+}
+.tooltip-wrap:hover .tooltip-box {
+  display: block;
+}
