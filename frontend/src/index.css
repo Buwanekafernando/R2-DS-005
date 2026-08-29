@@ -28,6 +28,7 @@ html, body, #root {
 
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 .font-display { font-family: 'Syne', sans-serif; }
 
@@ -159,15 +160,14 @@ html, body, #root {
   white-space: pre-wrap; word-break: break-word;
 }
 
-/* Loading spinner animation */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
- 
-/* Tooltip — hidden by default, visible on hover */
+/* Cultural Influence tooltip (Component 1) — hidden by default, shown on hover/focus only */
 .tooltip-wrap .tooltip-box {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .15s ease;
 }
-.tooltip-wrap:hover .tooltip-box {
-  display: block;
+.tooltip-wrap:hover .tooltip-box,
+.tooltip-wrap:focus-within .tooltip-box {
+  opacity: 1;
+  visibility: visible;
 }
