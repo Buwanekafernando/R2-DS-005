@@ -31,9 +31,10 @@ from api.schemas import (
     ProductInput, AnalysisResult, HealthResponse,
     OrchestratorInput, OrchestratorResult,
     Component1Summary, Component3Summary, Component24Summary,
-    ScarcityAnalyzeInput, PainPointExtractInput,
+    ScarcityAnalyzeInput, PainPointExtractInput, ChannelVariantsInput,
 )
 from src.component1.agent import DualSystemAgent
+from src.component1.generator import generate_channel_variants
 from src.component3.scarcity_agent import ScarcityAgent
 from src.component3.pain_point_extractor import extract_pain_points_detailed
 from src.component2.model_loader import load_emotion_model
@@ -147,6 +148,23 @@ def batch_analyze(items: list[ProductInput]):
     return {"results": results, "total": len(results)}
 
 
+@app.post("/component1/channel-variants")
+def channel_variants(input_data: ChannelVariantsInput):
+    """
+    Reformats an already-chosen winning copy into Social Media, Product
+    Listing, and Email variants — same core message, different format for
+    each channel a small business actually needs to publish to.
+    """
+    try:
+        return generate_channel_variants(
+            product_text=input_data.product_text,
+            category=input_data.category,
+            winning_copy=input_data.winning_copy,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Channel variant generation error: {str(e)}")
+
+
 # ── Component 3 endpoints (new — Component 3 had no API before) ──
 @app.post("/component3/extract-pain-points")
 def extract_pain_points(input_data: PainPointExtractInput):
@@ -254,6 +272,7 @@ def generate_strategy(input_data: OrchestratorInput):
 
         return {
             "product": input_data.product_name,
+            "component1_full": c1_result,
             "component1": {
                 "cognitive_mode": agent_output["cognitive_mode"],
                 "confidence": agent_output["confidence"],
@@ -269,6 +288,7 @@ def generate_strategy(input_data: OrchestratorInput):
                 "final_copy": final_copy,
                 "trust_status": trust["status"],
                 "trust_score": trust["score"],
+                "all_copies": all_copies,
             },
             "component24": {
                 "target_emotion": c24_result["target_emotion"],
@@ -276,6 +296,9 @@ def generate_strategy(input_data: OrchestratorInput):
                 "emotion_copy": c24_result["emotion_copy"],
                 "emotion_detected": c24_result["emotion_detected"],
                 "emotion_matched": c24_result["emotion_matched"],
+                "attempts_used": c24_result["attempts_used"],
+                "emotion_after_loss": c24_result["emotion_after_loss"],
+                "emotion_after_score": c24_result["emotion_after_score"],
                 "loss_message": c24_result["loss_message"],
                 "gain_sentiment": c24_result["gain_sentiment"],
                 "loss_sentiment": c24_result["loss_sentiment"],

@@ -78,6 +78,7 @@ class Component3Summary(BaseModel):
     final_copy              : str
     trust_status            : str
     trust_score              : float
+    all_copies                : Dict[str, str]  # low/medium/high — full detail for rich UI
 
 
 class Component24Summary(BaseModel):
@@ -87,6 +88,9 @@ class Component24Summary(BaseModel):
     emotion_copy         : str
     emotion_detected     : Optional[str]
     emotion_matched      : bool
+    attempts_used        : int
+    emotion_after_loss   : Optional[str] = None
+    emotion_after_score  : float
     loss_message         : str
     gain_sentiment       : float
     loss_sentiment       : float
@@ -109,9 +113,16 @@ class PainPointExtractInput(BaseModel):
     text: str
 
 
+class ChannelVariantsInput(BaseModel):
+    product_text: str
+    category: Optional[str] = "unknown"
+    winning_copy: str
+
+
 class OrchestratorResult(BaseModel):
     """Full response for POST /generate-strategy"""
     product      : str
+    component1_full : AnalysisResult
     component1   : Component1Summary
     component3   : Component3Summary
     component24  : Component24Summary
