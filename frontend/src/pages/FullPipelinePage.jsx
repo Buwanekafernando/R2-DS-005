@@ -5,17 +5,20 @@ import ResultCode from "../components/ResultCode.jsx";
 import Component1Result from "../components/Component1Result.jsx";
 import Component3Result from "../components/Component3Result.jsx";
 import Component24Result from "../components/Component24Result.jsx";
+import FinalRecommendationCard from "../components/FinalRecommendationCard.jsx";
 import {
-  CATEGORIES, EMOTIONS, defaultDemographics,
+  CATEGORIES, EMOTIONS, defaultDemographics, defaultEmotionFor, CATEGORY_EMOTION_MAP,
   GENDER_OPTIONS, AGE_OPTIONS, DISTRICTS, OCCUPATION_OPTIONS, SPENDING_OPTIONS, CULTURE_OPTIONS,
 } from "../constants.js";
 import { usePersistedState, clearPersisted } from "../usePersistedState.js";
+import { saveToHistory } from "../history.js";
+import { downloadStrategy } from "../exportStrategy.js";
 
 const STAGES = [
-  { id: "c1", n: "1", label: "Dual-System\nReasoning" },
-  { id: "c2", n: "2", label: "Emotion\nPropagation" },
-  { id: "c3", n: "3", label: "Scarcity\nOptimization" },
-  { id: "c4", n: "4", label: "Loss\nFraming" },
+  { id: "c1", n: "1", label: "Buying\nPsychology" },
+  { id: "c3", n: "2", label: "Urgency &\nScarcity" },
+  { id: "c2", n: "3", label: "Emotional\nAppeal" },
+  { id: "c4", n: "4", label: "Loss-Framed\nMessaging" },
 ];
 
 const DEFAULT_FORM = {
@@ -31,9 +34,12 @@ const DEFAULT_FORM = {
 export default function FullPipelinePage() {
   const [form, setForm] = usePersistedState("nm_pipeline_form", DEFAULT_FORM);
   const [demo, setDemo] = usePersistedState("nm_pipeline_demo", defaultDemographics());
+  const [wasAutoFilled, setWasAutoFilled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+
+  const recommendedEmotions = CATEGORY_EMOTION_MAP[form.category] || [];
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
   const updateDemo = (key) => (e) => setDemo({ ...demo, [key]: e.target.value });
@@ -41,6 +47,7 @@ export default function FullPipelinePage() {
   const clearForm = () => {
     setForm(DEFAULT_FORM);
     setDemo(defaultDemographics());
+    setWasAutoFilled(true);
     setResult(null);
     setError("");
     clearPersisted("nm_pipeline_form");
@@ -63,6 +70,7 @@ export default function FullPipelinePage() {
         demographics: demo,
       });
       setResult(data);
+      saveToHistory(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -76,10 +84,10 @@ export default function FullPipelinePage() {
         Main Application — Build Your Strategy
       </h1>
       <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20, maxWidth: 640 }}>
-        Runs all four features from one product input, then hands you two ready-to-use marketing
-        messages: one built around urgency, one built around emotion and what the customer stands
-        to lose by not buying. The order below (1 → 2 → 3 → 4) is just how the features connect, not
-        a ranking — Component 1 runs first and its copy feeds both branches.
+        Fill in your product once, and this hands you two ready-to-use marketing messages: one
+        built around urgency, one built around emotion and what the customer stands to lose by not
+        buying. Buying Psychology runs first and its copy feeds into both the urgency and emotional
+        strategies below.
       </p>
 
       {/* ── Agent chain ── */}
@@ -113,25 +121,64 @@ export default function FullPipelinePage() {
           </div>
           <div>
             <span className="field-label">Category</span>
-            <select className="nm-select" value={form.category} onChange={update("category")}>
+            <select
+              className="nm-select"
+              value={form.category}
+              onChange={(e) => {
+                const category = e.target.value;
+                // Auto-fill the target emotion to match the new category,
+                // but only if the user hasn't manually picked one already —
+                // don't clobber an intentional choice.
+                const shouldAutoFill = !form.target_emotion || wasAutoFilled;
+                setForm({
+                  ...form,
+                  category,
+                  target_emotion: shouldAutoFill ? defaultEmotionFor(category) : form.target_emotion,
+                });
+                if (shouldAutoFill) setWasAutoFilled(true);
+              }}
+            >
               {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div className="md:col-span-2">
             <span className="field-label">Product Description</span>
             <textarea className="nm-textarea" rows={3} value={form.product_text} onChange={update("product_text")}
-              placeholder="Full product description, as fed to Component 1" />
+              placeholder="Full product description — this is what the AI will analyze" />
           </div>
           <div>
             <span className="field-label">Price</span>
             <input className="nm-input" type="number" min="0" step="0.01" value={form.price} onChange={update("price")} />
           </div>
           <div>
-            <span className="field-label">Target Emotion (optional — auto-selected from category if left blank)</span>
-            <select className="nm-select" value={form.target_emotion} onChange={update("target_emotion")}>
+            <span className="field-label">Target Emotion</span>
+            <select
+              className="nm-select"
+              value={form.target_emotion}
+              onChange={(e) => { setForm({ ...form, target_emotion: e.target.value }); setWasAutoFilled(false); }}
+            >
               <option value="">Auto-select</option>
               {EMOTIONS.map((e) => <option key={e} value={e}>{e}</option>)}
             </select>
+            {recommendedEmotions.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-gray-500">Recommended for {form.category}:</span>
+                {recommendedEmotions.map((emo) => (
+                  <button
+                    key={emo}
+                    type="button"
+                    onClick={() => { setForm({ ...form, target_emotion: emo }); setWasAutoFilled(false); }}
+                    className={`text-xs rounded-full px-3 py-1 border transition ${
+                      form.target_emotion === emo
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                    }`}
+                  >
+                    {emo}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <span className="field-label">Target Audience</span>
@@ -154,7 +201,7 @@ export default function FullPipelinePage() {
         </div>
         <div className="nm-card-body">
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-            This shapes how confident Component 1 is about the buying decision — a rough
+            This shapes how confident the AI is about how your customer decides to buy — a rough
             profile of a typical customer is enough, it doesn't need to be exact.
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
@@ -191,8 +238,13 @@ export default function FullPipelinePage() {
       </div>
 
       <button className="nm-btn-primary" disabled={loading} onClick={run}>
-        {loading ? "Running all four agents…" : "Generate Full Strategy"}
+        {loading ? "Generating your strategy…" : "Generate Full Strategy"}
       </button>
+      {loading && (
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "center" }}>
+          This usually takes 15–30 seconds — four AI steps are running one after another.
+        </div>
+      )}
 
       {error && <p className="text-sm mt-3" style={{ color: "var(--coral-600)" }}>{error}</p>}
 
@@ -222,6 +274,22 @@ export default function FullPipelinePage() {
             </div>
           </div>
 
+          {/* AI disclaimer + download */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10,
+            background: "var(--amber-50)", border: "1px solid var(--amber-100)", borderRadius: "var(--radius-md)",
+            padding: "12px 16px", marginBottom: 16,
+          }}>
+            <div style={{ fontSize: 12, color: "var(--amber-600)", maxWidth: 480 }}>
+              ⚠️ This copy was written by AI. Please double-check any facts, numbers, or claims
+              against your real product before publishing it in an ad or listing.
+              <div style={{ marginTop: 4, color: "var(--teal-600)" }}>✓ Automatically saved to your History tab.</div>
+            </div>
+            <button className="nm-btn-secondary" style={{ width: "auto", padding: "8px 16px", fontSize: 13 }} onClick={() => downloadStrategy(result)}>
+              ⬇ Download full strategy
+            </button>
+          </div>
+
           {/* Component 1 — full detail, same card as its own page */}
           <Component1Result result={result.component1_full} showJson={false} productText={form.product_text} category={form.category} />
 
@@ -230,6 +298,9 @@ export default function FullPipelinePage() {
 
           {/* Component 2 + 4 — full detail, same card as its own page */}
           <Component24Result result={result.component24} showJson={false} />
+
+          {/* Synthesis step — blends all four analyses into one final answer */}
+          <FinalRecommendationCard rec={result.final_recommendation} />
 
           <ResultCode title="Result Code (JSON) — full synthesized output" data={result} />
         </div>

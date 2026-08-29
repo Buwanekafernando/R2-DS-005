@@ -90,7 +90,7 @@ export default function Component3Page({ baseCopy, sourceProductName }) {
             <textarea className="nm-textarea" rows={3} value={form.description} onChange={update("description")} />
             {baseCopy && (
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                Pre-filled from Component 1's recommended copy — edit freely.
+                Pre-filled from your Buying Psychology result — edit freely.
               </div>
             )}
 
@@ -131,7 +131,7 @@ export default function Component3Page({ baseCopy, sourceProductName }) {
                   margin: "0 auto 16px",
                 }} />
                 <div className="empty-title" style={{ fontSize: 14 }}>Checking urgency fit…</div>
-                <div className="empty-desc">Scoring how well scarcity messaging suits this product.</div>
+                <div className="empty-desc">Scoring how well scarcity messaging suits this product. Usually takes about 5–10 seconds.</div>
               </div>
             </div>
           </div>

@@ -1,24 +1,11 @@
 import { useState, useEffect } from "react";
 import { apiPost } from "../api.js";
 import Component24Result from "../components/Component24Result.jsx";
+import { CATEGORIES, EMOTIONS, CATEGORY_EMOTION_MAP, defaultEmotionFor } from "../constants.js";
 
-const CATEGORIES = ["Baby", "Beauty", "Apparel", "Electronics", "Sports", "Pet", "Groceries"];
-const EMOTIONS = ["joy", "excitement", "trust", "confidence", "curiosity", "relief", "admiration", "neutral"];
-
-// Literature-backed recommended emotions per category.
-const recommendedEmotionByCategory = {
-  Baby: ["trust", "relief", "joy"],
-  Beauty: ["confidence", "trust", "joy"],
-  Apparel: ["joy", "excitement"],
-  Electronics: ["excitement", "joy"],
-  Sports: ["excitement", "confidence", "trust"],
-  Pet: ["joy", "trust"],
-  Groceries: ["trust", "relief", "joy"],
-};
-
-// First recommended emotion = the auto-selected default for a category.
-const defaultEmotionFor = (category) =>
-  (recommendedEmotionByCategory[category] || [])[0] || "";
+// Local alias, kept so the rest of this file (which was built against
+// your friend's original naming) doesn't need every reference rewritten.
+const recommendedEmotionByCategory = CATEGORY_EMOTION_MAP;
 
 // Thin wrapper — full rendering lives in the shared Component24Result component.
 function ResultCard({ result }) {
@@ -88,7 +75,7 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-1">Emotion + Urgency Copy Generator</h1>
+      <h1 className="text-2xl font-bold mb-1">Emotional Appeal & Loss-Framed Messaging</h1>
       <p className="text-sm text-gray-500 mb-6">
         Generates two ready-to-use versions of your ad copy: one built to evoke a specific feeling
         (joy, trust, excitement...), and a second version of that same message reframed around what
@@ -97,7 +84,7 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
 
       {baseCopy && (
         <div className="border rounded-lg px-4 py-3 mb-4 text-sm" style={{ background: "var(--purple-50)", borderColor: "var(--purple-100)", color: "var(--purple-800)" }}>
-          Using Component 1's recommended copy as the base for emotional infusion: <em>"{baseCopy.slice(0, 100)}{baseCopy.length > 100 ? "…" : ""}"</em>
+          Using your Buying Psychology result as the base for emotional infusion: <em>"{baseCopy.slice(0, 100)}{baseCopy.length > 100 ? "…" : ""}"</em>
         </div>
       )}
 
