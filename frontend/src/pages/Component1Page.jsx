@@ -368,7 +368,7 @@ export default function Component1Page({ onResult }) {
                 <div className="empty-title">Ready to Analyze</div>
                 <div className="empty-desc">
                   Enter a product description, fill in the consumer profile,
-                  and click Analyze to classify cognitive mode and generate
+                  and click Analyze to identify the best marketing approach and generate
                   psychologically aligned marketing copy.
                 </div>
               </div>
@@ -388,10 +388,11 @@ export default function Component1Page({ onResult }) {
                   margin: "0 auto 16px",
                 }} />
                 <div className="empty-title" style={{ fontSize: 14 }}>
-                  Classifying cognitive mode…
+                  Analyzing your product…
                 </div>
                 <div className="empty-desc">
-                  RoBERTa + demographic model running. Generating copy…
+                  Our AI is generating your marketing copy.
+                  This takes about 10–15 seconds.
                 </div>
               </div>
             </div>
@@ -448,9 +449,10 @@ function ResultView({ result }) {
   const bdr       = isS1 ? "var(--amber-100)" : "var(--blue-100)";
   const txt       = isS1 ? "var(--amber-600)" : "var(--blue-800)";
   const bar       = isS1 ? "var(--amber-400)" : "var(--blue-600)";
+  // Plain marketing-friendly label — no "System 1/2" jargon for users
   const modeLabel = isS1
-    ? "System 1 — Emotional / Impulsive"
-    : "System 2 — Rational / Deliberative";
+    ? "Emotional / Impulse Buy Product"
+    : "Rational / Research-Based Buy Product";
 
   // Plain-English meaning for non-technical marketing users
   const plainMeaning = isS1
@@ -469,22 +471,13 @@ function ResultView({ result }) {
       <div className="nm-card" style={{ animation: "fadeUp .4s ease" }}>
         <div className="nm-card-header">
           <span className="nm-card-title">Classification Result</span>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {demoUsed && (
-              <span
-                className="nm-badge"
-                style={{ background: "var(--purple-50)", color: "var(--purple-800)", border: "1px solid var(--purple-100)" }}
-              >
-                Product + Demographic
-              </span>
-            )}
-            <span
-              className="nm-badge"
-              style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}
-            >
-              {demoUsed ? "RoBERTa + Demo" : "RoBERTa"}
-            </span>
-          </div>
+          {/* Single friendly badge — no technical jargon visible to users */}
+          <span
+            className="nm-badge"
+            style={{ background: "var(--teal-50)", color: "var(--teal-600)", border: "1px solid var(--teal-100)" }}
+          >
+            ✓ AI Analysed
+          </span>
         </div>
         <div className="nm-card-body">
           <div className="clf-badge" style={{ background: bg, borderColor: bdr }}>
@@ -493,10 +486,9 @@ function ResultView({ result }) {
             <div className="clf-bar-wrap">
               <div className="clf-bar" style={{ width: `${clf.confidence * 100}%`, background: bar }} />
             </div>
-            <div className="clf-probs" style={{ color: txt }}>
-              <span><strong>{(clf.confidence * 100).toFixed(1)}%</strong></span>
-              <span>S1: {clf.s1_probability.toFixed(3)}</span>
-              <span>S2: {clf.s2_probability.toFixed(3)}</span>
+            {/* Show only the confidence % — S1/S2 probabilities are too technical */}
+            <div style={{ fontSize: 13, color: txt, fontWeight: 700, marginTop: 4 }}>
+              {(clf.confidence * 100).toFixed(0)}% confident in this classification
             </div>
           </div>
 
@@ -537,16 +529,27 @@ function ResultView({ result }) {
                 border: isEmoRec ? "2px solid var(--amber-400)" : "1px solid var(--amber-100)",
               }}
             >
+              {/* USE THIS ONE banner — only shown on recommended card */}
+              {isEmoRec && (
+                <div style={{
+                  background: "var(--amber-400)", color: "#fff",
+                  fontSize: 11, fontWeight: 700, padding: "4px 10px",
+                  borderRadius: "var(--radius-sm)", marginBottom: 8,
+                  display: "inline-block", letterSpacing: ".05em",
+                }}>
+                  ★ USE THIS ONE
+                </div>
+              )}
               <div className="copy-label" style={{ color: "var(--amber-600)" }}>
-                ⚡ Emotional {isEmoRec && "· Recommended"}
+                ⚡ Emotional Copy
               </div>
               <div className="copy-text" style={{ color: "#3d2200" }}>
                 {gen.emotional.text}
               </div>
               <div className="copy-meta" style={{ color: "var(--amber-600)" }}>
-                Sentiment: {gen.emotional.quality.sentiment_compound.toFixed(2)}
+                Tone Score: {gen.emotional.quality.sentiment_compound.toFixed(2)}
                 &nbsp;·&nbsp;
-                Alignment: {(gen.emotional.quality.mode_alignment * 100).toFixed(0)}%
+                Content Quality: {(gen.emotional.quality.mode_alignment * 100).toFixed(0)}%
               </div>
               <CopyButton text={gen.emotional.text} />
             </div>
@@ -559,58 +562,82 @@ function ResultView({ result }) {
                 border: !isEmoRec ? "2px solid var(--blue-600)" : "1px solid var(--blue-100)",
               }}
             >
+              {/* USE THIS ONE banner — only shown on recommended card */}
+              {!isEmoRec && (
+                <div style={{
+                  background: "var(--blue-600)", color: "#fff",
+                  fontSize: 11, fontWeight: 700, padding: "4px 10px",
+                  borderRadius: "var(--radius-sm)", marginBottom: 8,
+                  display: "inline-block", letterSpacing: ".05em",
+                }}>
+                  ★ USE THIS ONE
+                </div>
+              )}
               <div className="copy-label" style={{ color: "var(--blue-800)" }}>
-                🔍 Rational {!isEmoRec && "· Recommended"}
+                🔍 Rational Copy
               </div>
               <div className="copy-text" style={{ color: "#0a2d52" }}>
                 {gen.rational.text}
               </div>
               <div className="copy-meta" style={{ color: "var(--blue-800)" }}>
-                Sentiment: {gen.rational.quality.sentiment_compound.toFixed(2)}
+                Tone Score: {gen.rational.quality.sentiment_compound.toFixed(2)}
                 &nbsp;·&nbsp;
-                Alignment: {(gen.rational.quality.mode_alignment * 100).toFixed(0)}%
+                Content Quality: {(gen.rational.quality.mode_alignment * 100).toFixed(0)}%
               </div>
               <CopyButton text={gen.rational.text} />
             </div>
           </div>
 
-          {/* Strategy recommendation */}
+          {/* Strategy recommendation — plain English for marketing users */}
           <div
             className="strategy-box"
             style={{
-              background:   isEmoRec ? "var(--amber-50)"  : "var(--blue-50)",
-              borderColor:  isEmoRec ? "var(--amber-100)" : "var(--blue-100)",
+              background:  isEmoRec ? "var(--amber-50)"  : "var(--blue-50)",
+              borderColor: isEmoRec ? "var(--amber-100)" : "var(--blue-100)",
             }}
           >
-            <div>
+            <div style={{ width: "100%" }}>
               <div
                 className="strategy-box-label"
                 style={{ color: isEmoRec ? "var(--amber-600)" : "var(--blue-800)" }}
               >
-                Recommended Strategy
+                What to do with this result
               </div>
               <div
                 className="strategy-box-text"
-                style={{ color: isEmoRec ? "var(--amber-600)" : "var(--blue-800)" }}
+                style={{ color: isEmoRec ? "var(--amber-600)" : "var(--blue-800)", marginBottom: 8 }}
               >
-                {rec.explanation}
+                {isEmoRec
+                  ? "This product sells through emotion. Use the emotional copy above in your ads, social media posts, or product listing to connect with buyers instantly."
+                  : "This product sells through logic. Use the rational copy above in your ads, product listings, or emails to help buyers make a confident decision."
+                }
+              </div>
+              {/* Next step prompt */}
+              <div style={{
+                fontSize: 12, fontWeight: 600,
+                color: isEmoRec ? "var(--amber-600)" : "var(--blue-800)",
+                borderTop: `1px solid ${isEmoRec ? "var(--amber-100)" : "var(--blue-100)"}`,
+                paddingTop: 8, marginTop: 4,
+              }}>
+                ✓ Click the Copy button on the highlighted copy above and paste it into your
+                Facebook ad, Instagram post, product listing, or email campaign.
               </div>
             </div>
           </div>
 
-          {/* Metrics row */}
+          {/* Metrics row — user-friendly labels */}
           <div className="metrics-row">
             <div className="metric-box">
               <div className="metric-val">{(clf.confidence * 100).toFixed(0)}%</div>
-              <div className="metric-lbl">Confidence</div>
+              <div className="metric-lbl">AI Confidence</div>
             </div>
             <div className="metric-box">
               <div className="metric-val">{(gen.emotional.quality.mode_alignment * 100).toFixed(0)}%</div>
-              <div className="metric-lbl">Emo. Alignment</div>
+              <div className="metric-lbl">Emotional Quality</div>
             </div>
             <div className="metric-box">
               <div className="metric-val">{(gen.rational.quality.mode_alignment * 100).toFixed(0)}%</div>
-              <div className="metric-lbl">Rat. Alignment</div>
+              <div className="metric-lbl">Rational Quality</div>
             </div>
           </div>
         </div>
