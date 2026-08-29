@@ -541,7 +541,7 @@ Keep the same core message and length. Return ONLY the rewritten message."""
         return {
             "recommended_intensity": intensity,
             "intensity_score": score,
-            "reason": f"Regression model predicted an urgency intensity score of {score:.2f} (Category: {intensity.upper()}).",
+            "reason": f"This urgency level fits your product based on its price, category, and demand signals (internal score {score:.2f}).",
             "full_response": f"Recommended intensity level: {intensity.upper()} (Score: {score:.2f})."
         }
 

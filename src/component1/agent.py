@@ -104,16 +104,12 @@ class DualSystemAgent:
         v = str(gender).strip().lower()
         gender_enc = 1.0 if 'female' in v else 0.0
 
-        # age_enc — handles both old format and new "years" suffix
+        # age_enc
         age_map = {
-            'under 18': 0.0,
-            '18 – 24': 1.0,  '18 – 24 years': 1.0,
-            '25 – 34': 2.0,  '25 – 34 years': 2.0,
-            '35 – 44': 3.0,  '35 – 44 years': 3.0,
-            '45 – 54': 4.0,  '45 – 54 years': 4.0,
-            '55 and above': 5.0, '55+': 5.0,
+            'under 18': 0, '18 – 24': 1, '25 – 34': 2,
+            '35 – 44': 3, '45 – 54': 4, '55 and above': 5
         }
-        age_enc = age_map.get(str(age_range).strip(), 2.0)
+        age_enc = float(age_map.get(str(age_range).strip(), 2))
 
         # environment_enc — urban vs rural from district
         urban_districts = {
@@ -122,45 +118,31 @@ class DualSystemAgent:
         }
         environment_enc = 1.0 if str(district).strip().lower() in urban_districts else 0.0
 
-        # occupation_enc — handles both old and new employment values
+        # occupation_enc
         occ_map = {
-            'student':                        0.7,
-            'homemaker':                      0.5,
-            'private sector employee':        0.4,
-            'self-employed / entrepreneur':   0.35,
-            'self-employed / business owner': 0.35,
-            'government sector employee':     0.3,
-            'government employee':            0.3,
-            'unemployed':                     0.5,
-            'other':                          0.5,
+            'student':                       0.7,
+            'homemaker':                     0.5,
+            'private sector employee':       0.4,
+            'government employee':           0.3,
+            'self-employed / business owner':0.3,
+            'other':                         0.5,
         }
         occupation_enc = occ_map.get(str(occupation).strip().lower(), 0.5)
 
-        # spending_enc — handles both old and new income brackets
+        # spending_enc
         spend_map = {
-            # New brackets from consumer-purchase.csv
-            'below rs. 30,000':            0.0,
-            'rs. 30,001 – rs. 60,000':     0.2,
-            'rs. 60,001 – rs. 100,000':    0.5,
-            'rs. 100,001 – rs. 150,000':   0.75,
-            'above rs. 150,000':           1.0,
-            'more than rs. 50,000':        0.7,
-            # Old Google Form brackets kept for backward compatibility
-            'less than rs. 5,000':         0.0,
-            'rs. 5,000 – rs. 15,000':      0.1,
-            'rs. 15,001 – rs. 30,000':     0.2,
-            'rs. 30,001 – rs. 50,000':     0.4,
+            'less than rs. 5,000':    0.0,
+            'rs. 5,000 – rs. 15,000': 0.25,
+            'rs. 15,001 – rs. 30,000':0.5,
+            'rs. 30,001 – rs. 50,000':0.75,
+            'more than rs. 50,000':   1.0,
         }
         spending_enc = spend_map.get(str(monthly_spending).strip().lower(), 0.5)
 
-        # culture_enc — handles both 1-5 Likert scale (new) and text (old)
-        try:
-            score = float(str(culture_influence).strip())
-            culture_enc = (score - 1.0) / 4.0   # normalize 1-5 → 0-1
-        except (ValueError, TypeError):
-            cv = str(culture_influence).strip().lower()
-            culture_enc = (1.0 if 'strongly' in cv or 'yes' in cv else
-                           0.0 if 'no' in cv else 0.5)
+        # culture_enc
+        cv = str(culture_influence).strip().lower()
+        culture_enc = (1.0 if 'strongly' in cv else
+                       0.0 if 'no' in cv else 0.5)
 
         return np.array([
             gender_enc,
@@ -176,7 +158,7 @@ class DualSystemAgent:
             float(emotional_check_total)  if emotional_check_total  is not None else 0.0,
         ]).reshape(1, -1)
 
-    # ── Core Classification Method ───────────────────────────
+#classification 
     def classify(self, product_text, category="unknown",
                  demographics=None, max_length=256):
         """
@@ -202,15 +184,11 @@ class DualSystemAgent:
             return_tensors="pt"
         ).to(self.device)
 
-        # ── Temperature scaling (Guo et al., 2017) ──────────────
-        # Raw softmax on transformer logits produces overconfident
-        # outputs (e.g. 99%). Temperature scaling divides logits
-        # before softmax to produce calibrated 82–93% range.
-        # Cite: Guo et al. (2017) "On Calibration of Modern Neural Networks"
-        TEMPERATURE = 5.0   # tuned to keep confidence in 82–93% range
+        #decides System 1 or System 2
+        TEMPERATURE = 3.0
         with torch.no_grad():
             outputs        = self.model(**encoding)
-            scaled_logits  = outputs.logits / TEMPERATURE
+            scaled_logits  = outputs.logits / TEMPERATURE     # ← scale here
             probs          = torch.softmax(scaled_logits, dim=1)
             pred           = torch.argmax(probs, dim=1).item()
 
@@ -246,19 +224,9 @@ class DualSystemAgent:
                     roberta_probs_arr.reshape(1, -1),
                     demo_probs_arr.reshape(1, -1)
                 ])
-                fused = self.meta_model.predict_proba(combined)[0]
-
-                # ── Probability smoothing on fusion output ────────
-                # Meta-learner trained on small dataset can produce
-                # overconfident outputs. Clamp to [0.05, 0.95] then
-                # renormalise so probabilities still sum to 1.0.
-                FUSION_MIN  = 0.05
-                raw_s2 = max(FUSION_MIN, min(1.0 - FUSION_MIN, float(fused[0])))
-                raw_s1 = max(FUSION_MIN, min(1.0 - FUSION_MIN, float(fused[1])))
-                total  = raw_s2 + raw_s1
-                s2_prob = round(raw_s2 / total, 4)
-                s1_prob = round(raw_s1 / total, 4)
-
+                fused   = self.meta_model.predict_proba(combined)[0]
+                s2_prob = round(float(fused[0]), 4)
+                s1_prob = round(float(fused[1]), 4)
                 # final prediction after fusion
                 pred    = 1 if s1_prob > s2_prob else 0
 
@@ -268,54 +236,29 @@ class DualSystemAgent:
                 print(f"  Demographic fusion error: {e}. Using RoBERTa only.")
                 # Fall back to original RoBERTa values 
 
-        # Hard confidence cap — no result should ever show 100%
-        # A model expressing certainty is scientifically unjustifiable
-        s1_prob    = min(s1_prob, 0.93)
-        s2_prob    = min(s2_prob, 0.93)
         confidence = max(s1_prob, s2_prob)
         mode       = "System1" if pred == 1 else "System2"
 
-        # ── Human-readable reasoning ──────────────────────────
-        # Plain English for marketing professionals, not data scientists.
+        # Reasoning
         if pred == 1:
-            if confidence > 0.85:
-                reason = (
-                    "This product is strongly associated with emotional, "
-                    "instinctive buying. Consumers are likely to purchase "
-                    "based on feeling rather than research."
-                )
-            else:
-                reason = (
-                    "This product shows a moderate emotional purchase pattern. "
-                    "Consumers may decide based on feeling, though some "
-                    "comparison is also likely."
-                )
+            reason = (
+                "Strong emotional/impulsive purchase signal detected."
+                if confidence > 0.85
+                else "Moderate emotional purchase signal detected."
+            )
         else:
-            if confidence > 0.85:
-                reason = (
-                    "This product strongly triggers deliberate, research-based "
-                    "buying. Consumers typically compare options and gather "
-                    "information before purchasing."
-                )
-            else:
-                reason = (
-                    "This product shows a moderate rational purchase pattern. "
-                    "Consumers tend to research, though emotional appeal "
-                    "may also influence the decision."
-                )
+            reason = (
+                "Strong rational/deliberate purchase signal detected."
+                if confidence > 0.85
+                else "Moderate rational purchase signal detected."
+            )
 
-        # Append personalised demographic context when fusion was used
+        # ── NEW: append demographic context to reasoning ──
         if demographics is not None and classification_method != "product text only (RoBERTa)":
-            gender   = demographics.get('gender', '')
             age      = demographics.get('age_range', '')
             district = demographics.get('district', '')
-            occ      = demographics.get('occupation', '')
-            parts    = [p for p in [gender, age, occ] if p]
-            if parts and district:
-                reason += (
-                    f" Consumer profile ({', '.join(parts)} from {district})"
-                    f" was factored into this classification."
-                )
+            if age and district:
+                reason += f" Profile: {age} from {district}."
 
         return {
             "cognitive_mode":          mode,
@@ -328,88 +271,62 @@ class DualSystemAgent:
         }
 
     def _evaluate_copy(self, text, expected_mode):
-        """
-        Score how well generated copy matches the intended mode.
-
-        Formula: combined ratio (60%) + density (40%), capped at 0.95.
-        Keyword lists are domain-specific and mutually exclusive to
-        prevent both copies from scoring identically.
-
-        Research basis: Hedonic/Utilitarian distinction from
-        Voss, Spangenberg & Grohmann (2003), Journal of Marketing Research.
-        """
+        """Score how well generated copy matches the intended mode"""
 
         words      = text.lower().split()
         word_count = len(words)
         sentiment  = self.sia.polarity_scores(text)
 
-        # ── Strictly emotional / System 1 markers ────────────
-        # Words that appear ONLY in emotionally-framed copy.
-        # Deliberately excludes neutral words like "quality", "value"
-        # that appear in both types of copy.
         s1_markers = [
-            'feel', 'love', 'heart', 'warmth', 'warm',
-            'dream', 'joy', 'delight', 'bliss', 'passion',
-            'thrill', 'magic', 'glow', 'alive', 'spark',
-            'beautiful', 'softness', 'gentle', 'tender', 'pure',
-            'indulge', 'captivate', 'irresistible', 'desire',
-            'cherish', 'embrace', 'bond', 'soothe', 'radiant',
-            'sensory', 'effortless', 'luxurious', 'divine',
-            'heavenly', 'celebrate', 'inspire', 'vibrant',
+            'feel', 'love', 'amazing', 'perfect', 'beautiful',
+            'enjoy', 'experience', 'dream', 'wonderful', 'excitement',
+            'thrill', 'passion', 'joy', 'happy', 'delight', 'pleasure',
+            'desire', 'heart', 'bliss', 'glow', 'spark', 'vibrant',
+            'rush', 'belong', 'irresistible', 'sensory', 'alive',
+            'magic', 'effortless', 'captivating', 'indulge', '!'
         ]
-
-        # ── Strictly rational / System 2 markers ─────────────
-        # Words that appear ONLY in analytically-framed copy.
-        # More technical and specific than emotional markers.
         s2_markers = [
-            'specifications', 'specification', 'performance',
-            'formulated', 'formulation', 'clinically', 'tested',
-            'certified', 'documented', 'measurable', 'percentage',
-            'milligrams', 'millilitres', 'concentration', 'compound',
-            'compatible', 'benchmark', 'processor', 'resolution',
-            'bandwidth', 'simultaneous', 'multitasking', 'sensor',
-            'warranty', 'efficiency', 'optimized', 'dermatologically',
-            'hypoallergenic', 'additive', 'preservative', 'diluent',
-            'calories', 'nutrients', 'ingredient', 'nutritional',
+            'features', 'performance', 'quality', 'reliable', 'efficient',
+            'proven', 'compare', 'specifications', 'battery', 'compatible',
+            'warranty', 'technology', 'capacity', 'resolution', 'processor',
+            'storage', 'ram', 'sensor', 'connectivity', 'network',
+            'bandwidth', 'measurable', 'multitasking', 'data', 'technical',
+            'precision', 'sustain', 'simultaneous', 'documented', 'value',
+            'durable', 'certified', 'tested', 'benchmark', 'optimized'
         ]
-
         s1_hits    = sum(1 for w in s1_markers if w in words)
         s2_hits    = sum(1 for w in s2_markers if w in words)
         total_hits = s1_hits + s2_hits
 
-        # ── Part 1: Keyword ratio ─────────────────────────────
-        # What fraction of the found keywords are the right type?
         if total_hits == 0:
-            # No keywords at all — penalise slightly
-            ratio_score = 0.25
+            ratio_score = 0.3   # neutral — no keywords found at all
         elif expected_mode == "emotional":
             ratio_score = s1_hits / total_hits
         else:
             ratio_score = s2_hits / total_hits
-
-        # ── Part 2: Keyword density per 10 words ─────────────
-        # Prevents a single keyword in a long text from scoring 100%.
-        # Target: ≥2 relevant keywords per 10 words = full density.
+            
+        
         DENSITY_TARGET = 2.0
         if expected_mode == "emotional":
-            raw_density = s1_hits / max(word_count / 10.0, 1)
+            density_score = min(
+                (s1_hits / max(word_count / 10.0, 1)) / DENSITY_TARGET,
+                1.0
+        )
         else:
-            raw_density = s2_hits / max(word_count / 10.0, 1)
-        density_score = min(raw_density / DENSITY_TARGET, 1.0)
-
-        # ── Combined: 60% ratio + 40% density ────────────────
+            density_score = min(
+                (s2_hits / max(word_count / 10.0, 1)) / DENSITY_TARGET,
+                1.0
+        )
         alignment = (ratio_score * 0.60) + (density_score * 0.40)
-
-        # Cap at 0.95 — a perfect score is never scientifically
-        # justifiable (Guo et al., 2017 — calibration principle)
         alignment = min(round(alignment, 4), 0.95)
+        
 
         return {
             "sentiment_compound": round(sentiment["compound"], 4),
             "sentiment_positive": round(sentiment["pos"], 4),
             "word_count":         word_count,
             "mode_alignment":     alignment,
-            "s1_keyword_hits":    s1_hits,
+            "s1_keyword_hits":    s1_hits,     # useful for debugging
             "s2_keyword_hits":    s2_hits,
         }
 
@@ -455,7 +372,7 @@ class DualSystemAgent:
         rational_copy  = generate_copy(rat_prompt)
 
         if not emotional_copy or not rational_copy:
-            return {"error": "Generation failed. Check LLM connection."}
+            return {"error": "We couldn't generate marketing copy right now — our AI service may be temporarily unavailable. Please try again in a moment."}
 
         # Stage 4 — Evaluate copy quality (unchanged)
         emo_quality = self._evaluate_copy(emotional_copy, "emotional")

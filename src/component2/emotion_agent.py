@@ -35,11 +35,15 @@ PROJECT_EMOTIONS = [
 CATEGORY_EMOTION_MAP = {
     "Baby": ["trust", "relief", "joy"],
     "Beauty": ["confidence", "trust", "joy"],
-    "Apparel": ["joy", "excitement","admiration"],
-    "Electronics": ["excitement", "joy","admiration"],
+    "Apparel": ["joy", "excitement", "admiration"],
+    "Electronics": ["excitement", "joy", "admiration"],
     "Sports": ["excitement", "confidence", "curiosity"],
-    "Pet": ["joy", "trust"],
-    "Groceries": ["trust", "relief", "joy"],
+    "Pet Products": ["joy", "trust"],
+    "Grocery": ["trust", "relief", "joy"],
+    "Home & Kitchen": ["trust", "relief", "confidence"],
+    "Automotive": ["confidence", "excitement", "trust"],
+    "Industrial": ["trust", "confidence"],
+    "Unknown": ["trust", "joy"],
 }
 
 VISUAL_SUGGESTIONS = {

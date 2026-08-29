@@ -249,3 +249,98 @@ def generate_channel_variants(product_text, category, winning_copy):
         "email_subject": email_subject,
         "email_body": email_body,
     }
+
+
+# ════════════════════════════════════════════════════════
+# FINAL SYNTHESIZED RECOMMENDATION
+# Takes all four agents' outputs and produces ONE final blended
+# recommendation with a plain-language rationale — the actual "final
+# output" of the multi-agent system, tying Dual-Process Theory, the
+# Scarcity Principle, Emotional Contagion, and Loss Aversion together
+# into a single answer, rather than leaving the person to pick between
+# three separate results themselves.
+# ════════════════════════════════════════════════════════
+
+def build_synthesis_prompt(
+    product_name, category, cognitive_mode, strategy,
+    scarcity_copy, scarcity_intensity,
+    emotion_copy, target_emotion, loss_copy,
+):
+    return f"""You are the lead strategist reviewing work from four specialist marketing analysts
+for the same product. Each one produced a different angle:
+
+1. BUYING PSYCHOLOGY ANALYST determined this product is bought {"emotionally/on impulse" if cognitive_mode == "System1" else "rationally, after research"} \
+and recommended a {strategy} tone.
+2. URGENCY & SCARCITY ANALYST recommended {scarcity_intensity} urgency and wrote: "{scarcity_copy}"
+3. EMOTIONAL APPEAL ANALYST targeted the feeling of "{target_emotion}" and wrote: "{emotion_copy}"
+4. LOSS-FRAMED MESSAGING ANALYST rewrote it around what the customer would miss out on: "{loss_copy}"
+
+PRODUCT: {product_name}
+CATEGORY: {category}
+
+Your job: write ONE final marketing message that intelligently combines the strongest elements
+of all four analyses into a single piece of ready-to-use copy. Do not just pick one of the four
+messages verbatim — blend them into something better than any single one alone.
+
+Return your answer in EXACTLY this format, nothing else:
+RECOMMENDATION: <the final blended marketing message, 35-60 words, ready to publish as-is>
+RATIONALE: <2-3 plain-English sentences explaining why this combination works for this product \
+and this type of customer decision — a business owner with no marketing background should \
+understand it>
+BEST_FOR: <a short phrase naming where this specific message works best, e.g. "Facebook and \
+Instagram ads" or "Product listing headline" or "Limited-time email promotion">"""
+
+
+def generate_final_recommendation(
+    product_name, category, cognitive_mode, strategy,
+    scarcity_copy, scarcity_intensity,
+    emotion_copy, target_emotion, loss_copy,
+):
+    """
+    Calls Grok once with all four agents' outputs and parses the
+    structured RECOMMENDATION / RATIONALE / BEST_FOR response.
+    """
+    prompt = build_synthesis_prompt(
+        product_name, category, cognitive_mode, strategy,
+        scarcity_copy, scarcity_intensity,
+        emotion_copy, target_emotion, loss_copy,
+    )
+    raw = generate_copy(prompt) or ""
+
+    recommendation, rationale, best_for = "", "", ""
+    current_key = None
+    buffer = []
+
+    def flush():
+        nonlocal recommendation, rationale, best_for
+        text = " ".join(buffer).strip()
+        if current_key == "RECOMMENDATION":
+            recommendation = text
+        elif current_key == "RATIONALE":
+            rationale = text
+        elif current_key == "BEST_FOR":
+            best_for = text
+
+    for line in raw.splitlines():
+        stripped = line.strip()
+        upper = stripped.upper()
+        if upper.startswith("RECOMMENDATION:"):
+            flush(); current_key = "RECOMMENDATION"; buffer = [stripped.split(":", 1)[1].strip()]
+        elif upper.startswith("RATIONALE:"):
+            flush(); current_key = "RATIONALE"; buffer = [stripped.split(":", 1)[1].strip()]
+        elif upper.startswith("BEST_FOR:"):
+            flush(); current_key = "BEST_FOR"; buffer = [stripped.split(":", 1)[1].strip()]
+        elif stripped and current_key:
+            buffer.append(stripped)
+    flush()
+
+    # Fallback if parsing didn't find the expected format — better to show
+    # something than nothing
+    if not recommendation:
+        recommendation = raw.strip() or scarcity_copy or emotion_copy
+
+    return {
+        "recommendation": recommendation,
+        "rationale": rationale or "This combines the buying-psychology, urgency, and emotional analyses above into one message.",
+        "best_for": best_for or "General use across ads and listings",
+    }
