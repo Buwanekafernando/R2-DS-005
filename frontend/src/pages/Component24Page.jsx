@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiPost } from "../api.js";
+import Component24Result from "../components/Component24Result.jsx";
 
 const CATEGORIES = ["Baby", "Beauty", "Apparel", "Electronics", "Sports", "Pet", "Groceries"];
 const EMOTIONS = ["joy", "excitement", "trust", "confidence", "curiosity", "relief", "admiration", "neutral"];
@@ -19,67 +20,9 @@ const recommendedEmotionByCategory = {
 const defaultEmotionFor = (category) =>
   (recommendedEmotionByCategory[category] || [])[0] || "";
 
-function Field({ label, value }) {
-  return (
-    <div className="border rounded-lg px-3 py-2">
-      <div className="text-xs uppercase text-gray-400">{label}</div>
-      <div className="text-sm font-medium">{value}</div>
-    </div>
-  );
-}
-
-// Compact result card, reused for single run and each variation.
+// Thin wrapper — full rendering lives in the shared Component24Result component.
 function ResultCard({ result }) {
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-xl p-4">
-        <div className="text-xs uppercase text-gray-400 mb-1">Emotion copy (gain-framed)</div>
-        <p className="mb-2">{result.emotion_copy}</p>
-        <div className="text-sm text-gray-600">
-          Target: <b>{result.target_emotion}</b> · Detected: <b>{result.emotion_detected}</b>{" "}
-          {result.emotion_matched
-            ? <span className="text-green-600">✓ matched</span>
-            : <span className="text-amber-600">kept best</span>}{" "}
-          · attempts: {result.attempts_used}/3
-        </div>
-      </div>
-
-      <div className="border rounded-xl p-4">
-        <div className="text-xs uppercase text-gray-400 mb-1">Loss-framed message</div>
-        <p className="mb-3">{result.loss_message}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Gain Sentiment" value={result.gain_sentiment} />
-          <Field label="Loss Sentiment" value={result.loss_sentiment} />
-          <Field label="FOMO Score" value={`${result.fomo_score} loss keywords`} />
-          <Field label="Sentiment Change"
-            value={result.sentiment_change > 0 ? `+${result.sentiment_change}` : result.sentiment_change} />
-        </div>
-        <div className="mt-3">
-          <Field label="Tone Safety Check" value={result.tone_label} />
-        </div>
-      </div>
-
-      <div className="border rounded-xl p-4">
-        <div className="text-xs uppercase text-gray-400 mb-1">Emotion survival check</div>
-        <div className="text-sm text-gray-600">
-          After loss framing, top emotion is <b>{result.emotion_after_loss}</b>{" "}
-          (target score {result.emotion_after_score}).{" "}
-          {result.emotion_survived
-            ? <span className="text-green-600">✓ emotion survived</span>
-            : <span className="text-red-600">✗ emotion shifted</span>}
-        </div>
-      </div>
-
-      {result.visual_suggestions && (
-        <div className="border rounded-xl p-4 text-sm text-gray-600">
-          <div className="text-xs uppercase text-gray-400 mb-1">Visual guidance</div>
-          <div>Color Palette: {result.visual_suggestions.palette}</div>
-          <div className="mt-1">Image style: {result.visual_suggestions.image_style}</div>
-          <div>Layout Mood: {result.visual_suggestions.layout_mood}</div>
-        </div>
-      )}
-    </div>
-  );
+  return <Component24Result result={result} />;
 }
 
 export default function Component24Page({ baseCopy, sourceProductName }) {
@@ -145,10 +88,11 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-1">Emotion + Loss Framing Pipeline</h1>
+      <h1 className="text-2xl font-bold mb-1">Emotion + Urgency Copy Generator</h1>
       <p className="text-sm text-gray-500 mb-6">
-        The emotion agent generates the copy, the loss framing agent reframes it (with full
-        sentiment / FOMO / tone outputs), then RoBERTa checks the emotion survived.
+        Generates two ready-to-use versions of your ad copy: one built to evoke a specific feeling
+        (joy, trust, excitement...), and a second version of that same message reframed around what
+        customers risk missing out on. Pick whichever fits the moment — see the guidance on each below.
       </p>
 
       {baseCopy && (

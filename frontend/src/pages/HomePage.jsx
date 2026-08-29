@@ -88,6 +88,52 @@ export default function HomePage({ onGetStarted }) {
         </div>
       </div>
 
+      {/* Understanding your results — glossary for non-technical users */}
+      <div className="max-w-[900px] mx-auto px-10 pb-16">
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <h2 className="font-display" style={{ fontSize: 24, fontWeight: 700 }}>Understanding Your Results</h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 6, maxWidth: 560, margin: "6px auto 0" }}>
+            You don't need a marketing or data-science background to use this. Here's what
+            the terms on your results page actually mean.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <GlossaryItem
+            term="Confidence Score"
+            meaning="How sure the AI is about its own classification — shown as a percentage. A higher number means the AI found clearer signals in your product description; it doesn't mean the copy itself is better."
+          />
+          <GlossaryItem
+            term='"Emotional" vs "Rational" product'
+            meaning="Some products get bought on impulse and feeling (emotional) — think perfume or a treat. Others get bought after research and comparison (rational) — think a laptop or insurance. The AI decides which applies to your product and writes copy to match."
+          />
+          <GlossaryItem
+            term="Scarcity Intensity (Low / Medium / High)"
+            meaning="How strongly the copy pushes urgency — limited stock, time pressure, high demand. Low is subtle, High is aggressive ('only 2 left!'). The AI picks a level it thinks fits your product without sounding fake."
+          />
+          <GlossaryItem
+            term="Trust Score"
+            meaning="An estimate of how believable the urgency messaging will feel to a real customer. A low trust score or a 'Warning' doesn't mean something is broken — it's a heads-up that the messaging might come across as pushy for this particular product, so use it carefully or for a short, genuine promotion only."
+          />
+          <GlossaryItem
+            term="Sentiment Score"
+            meaning="How positive or negative a piece of text sounds, on a scale from -1 (very negative) to +1 (very positive). Used to check that urgency-driven copy doesn't accidentally turn customers off."
+          />
+          <GlossaryItem
+            term="FOMO Score"
+            meaning={'FOMO = "Fear Of Missing Out." This counts how many urgency phrases (like "don\'t miss out" or "limited time") appear in a message. A higher number means stronger urgency language.'}
+          />
+          <GlossaryItem
+            term="Target Emotion"
+            meaning="The specific feeling — excitement, trust, confidence, and so on — the AI is trying to build into your marketing copy for this product category."
+          />
+          <GlossaryItem
+            term="Loss-Framed Copy"
+            meaning="A version of your message rewritten around what the customer loses by not buying, instead of what they gain by buying. Research shows people often respond more strongly to avoiding a loss than gaining a benefit — best used sparingly, for real limited-time offers."
+          />
+        </div>
+      </div>
+
       {/* What you get */}
       <div className="max-w-[900px] mx-auto px-10 py-16 text-center">
         <h2 className="font-display" style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
@@ -101,6 +147,21 @@ export default function HomePage({ onGetStarted }) {
         <button className="nm-btn-secondary" style={{ padding: "12px 28px" }} onClick={onGetStarted}>
           Try it with your product →
         </button>
+      </div>
+    </div>
+  );
+}
+
+function GlossaryItem({ term, meaning }) {
+  return (
+    <div className="nm-card" style={{ margin: 0 }}>
+      <div className="nm-card-body" style={{ padding: "14px 20px" }}>
+        <div className="font-display" style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: "var(--text-primary)" }}>
+          {term}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          {meaning}
+        </div>
       </div>
     </div>
   );

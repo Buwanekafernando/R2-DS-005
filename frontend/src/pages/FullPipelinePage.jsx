@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { apiPost } from "../api.js";
-
-const CATEGORIES = ["Beauty", "Electronics", "Apparel", "Grocery", "Baby", "Pet Products", "Sports"];
-const EMOTIONS = ["joy", "excitement", "trust", "confidence", "curiosity", "relief", "admiration", "neutral"];
+import CopyButton from "../components/CopyButton.jsx";
+import ResultCode from "../components/ResultCode.jsx";
+import Component1Result from "../components/Component1Result.jsx";
+import Component3Result from "../components/Component3Result.jsx";
+import Component24Result from "../components/Component24Result.jsx";
+import {
+  CATEGORIES, EMOTIONS, defaultDemographics,
+  GENDER_OPTIONS, AGE_OPTIONS, DISTRICTS, OCCUPATION_OPTIONS, SPENDING_OPTIONS, CULTURE_OPTIONS,
+} from "../constants.js";
+import { usePersistedState, clearPersisted } from "../usePersistedState.js";
 
 const STAGES = [
   { id: "c1", n: "1", label: "Dual-System\nReasoning" },
@@ -11,21 +18,34 @@ const STAGES = [
   { id: "c4", n: "4", label: "Loss\nFraming" },
 ];
 
+const DEFAULT_FORM = {
+  product_name: "",
+  product_text: "",
+  category: CATEGORIES[0],
+  price: 0,
+  target_audience: "",
+  features: "",
+  target_emotion: "",
+};
+
 export default function FullPipelinePage() {
-  const [form, setForm] = useState({
-    product_name: "",
-    product_text: "",
-    category: CATEGORIES[0],
-    price: 0,
-    target_audience: "",
-    features: "",
-    target_emotion: "",
-  });
+  const [form, setForm] = usePersistedState("nm_pipeline_form", DEFAULT_FORM);
+  const [demo, setDemo] = usePersistedState("nm_pipeline_demo", defaultDemographics());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+  const updateDemo = (key) => (e) => setDemo({ ...demo, [key]: e.target.value });
+
+  const clearForm = () => {
+    setForm(DEFAULT_FORM);
+    setDemo(defaultDemographics());
+    setResult(null);
+    setError("");
+    clearPersisted("nm_pipeline_form");
+    clearPersisted("nm_pipeline_demo");
+  };
 
   const run = async () => {
     if (!form.product_name.trim() || !form.product_text.trim()) {
@@ -40,6 +60,7 @@ export default function FullPipelinePage() {
         ...form,
         price: Number(form.price) || 0,
         target_emotion: form.target_emotion || null,
+        demographics: demo,
       });
       setResult(data);
     } catch (err) {
@@ -52,12 +73,13 @@ export default function FullPipelinePage() {
   return (
     <div className="max-w-[1000px] mx-auto px-10 py-8">
       <h1 className="font-display" style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-1px", marginBottom: 6 }}>
-        Full Pipeline — Synthesized Strategy
+        Main Application — Build Your Strategy
       </h1>
       <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20, maxWidth: 640 }}>
-        Runs all four agents from one product input: Component 1 classifies the product and writes
-        the base copy, Component 3 layers scarcity messaging on top of it, and Component 2 → 4 infuse
-        emotion into that same base copy before reframing it around loss aversion.
+        Runs all four agents from one product input, then hands you two ready-to-use marketing
+        messages: one built around urgency, one built around emotion and what the customer stands
+        to lose by not buying. The order below (1 → 3 → 2 → 4) is just how the agents connect, not
+        a ranking — Component 1 runs first and its copy feeds both branches.
       </p>
 
       {/* ── Agent chain ── */}
@@ -75,7 +97,15 @@ export default function FullPipelinePage() {
 
       {/* ── Input ── */}
       <div className="nm-card">
-        <div className="nm-card-header"><span className="nm-card-title">Product Input</span></div>
+        <div className="nm-card-header">
+          <span className="nm-card-title">Product Input</span>
+          <button
+            onClick={clearForm}
+            style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+          >
+            Clear form
+          </button>
+        </div>
         <div className="nm-card-body grid grid-cols-1 md:grid-cols-2 gap-x-4">
           <div>
             <span className="field-label">Product Name</span>
@@ -114,6 +144,52 @@ export default function FullPipelinePage() {
         </div>
       </div>
 
+      {/* ── Customer Details ── */}
+      <div className="nm-card">
+        <div className="nm-card-header">
+          <span className="nm-card-title">Customer Details</span>
+          <span className="nm-badge" style={{ background: "var(--purple-50)", color: "var(--purple-800)", border: "1px solid var(--purple-100)" }}>
+            Who you're selling to
+          </span>
+        </div>
+        <div className="nm-card-body">
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+            This shapes how confident Component 1 is about the buying decision — a rough
+            profile of a typical customer is enough, it doesn't need to be exact.
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+            <div>
+              <span className="field-label">Gender</span>
+              <select className="nm-select" value={demo.gender} onChange={updateDemo("gender")}>
+                {GENDER_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+              <span className="field-label">Age Range</span>
+              <select className="nm-select" value={demo.age_range} onChange={updateDemo("age_range")}>
+                {AGE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+              <span className="field-label">District</span>
+              <select className="nm-select" value={demo.district} onChange={updateDemo("district")}>
+                {DISTRICTS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <span className="field-label">Occupation</span>
+              <select className="nm-select" value={demo.occupation} onChange={updateDemo("occupation")}>
+                {OCCUPATION_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+              <span className="field-label">Monthly Spending</span>
+              <select className="nm-select" value={demo.monthly_spending} onChange={updateDemo("monthly_spending")}>
+                {SPENDING_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+              <span className="field-label">Cultural Influence</span>
+              <select className="nm-select" value={demo.culture_influence} onChange={updateDemo("culture_influence")}>
+                {CULTURE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button className="nm-btn-primary" disabled={loading} onClick={run}>
         {loading ? "Running all four agents…" : "Generate Full Strategy"}
       </button>
@@ -122,80 +198,40 @@ export default function FullPipelinePage() {
 
       {result && (
         <div style={{ marginTop: 28 }}>
-          {/* Component 1 */}
-          <div className="nm-card" style={{ animation: "fadeUp .4s ease" }}>
-            <div className="nm-card-header">
-              <span className="nm-card-title">1 · Dual-System Reasoning</span>
-              <span className="nm-badge" style={{ background: "var(--blue-50)", color: "var(--blue-800)", border: "1px solid var(--blue-100)" }}>
-                {result.component1.cognitive_mode} · {(result.component1.confidence * 100).toFixed(0)}%
-              </span>
-            </div>
+          {/* ── Plain-language summary — the actual takeaway, up top ── */}
+          <div className="nm-card" style={{ animation: "fadeUp .4s ease", background: "var(--text-primary)", border: "none" }}>
             <div className="nm-card-body">
-              <div className="copy-text">{result.component1.recommended_copy}</div>
-              <div className="copy-meta" style={{ color: "var(--text-muted)", marginTop: 8 }}>Strategy: {result.component1.strategy}</div>
-            </div>
-          </div>
-
-          {/* Component 3 */}
-          <div className="nm-card" style={{ animation: "fadeUp .4s ease .1s both" }}>
-            <div className="nm-card-header">
-              <span className="nm-card-title">3 · Scarcity Optimization</span>
-              <span className="nm-badge" style={{ background: "var(--amber-50)", color: "var(--amber-600)", border: "1px solid var(--amber-100)" }}>
-                {result.component3.recommended_intensity.toUpperCase()} intensity
-              </span>
-            </div>
-            <div className="nm-card-body">
-              <div className="copy-text">{result.component3.final_copy}</div>
-              <div className="copy-meta" style={{ color: "var(--text-muted)", marginTop: 8 }}>
-                {result.component3.reason} · Trust: {result.component3.trust_status} ({(result.component3.trust_score * 100).toFixed(0)}%)
+              <div style={{ color: "var(--surface)", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
+                Two ready-to-use marketing messages for "{result.product}"
               </div>
-              {result.component3.pain_points_detected?.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
-                  Pain points used: {result.component3.pain_points_detected.join(", ")}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Component 2 + 4 */}
-          <div className="nm-card" style={{ animation: "fadeUp .4s ease .2s both" }}>
-            <div className="nm-card-header">
-              <span className="nm-card-title">2 → 4 · Emotion Propagation + Loss Framing</span>
-              <span className="nm-badge" style={{ background: "var(--purple-50)", color: "var(--purple-800)", border: "1px solid var(--purple-100)" }}>
-                Target: {result.component24.target_emotion}
-              </span>
-            </div>
-            <div className="nm-card-body">
               <div className="copy-grid">
-                <div className="copy-card" style={{ background: "var(--teal-50)", border: "1px solid var(--teal-100)" }}>
-                  <div className="copy-label" style={{ color: "var(--teal-600)" }}>Gain-Framed (Emotion)</div>
-                  <div className="copy-text">{result.component24.emotion_copy}</div>
-                  <div className="copy-meta" style={{ color: "var(--teal-600)" }}>
-                    Detected: {result.component24.emotion_detected} {result.component24.emotion_matched ? "✓ matched" : "· kept best"}
-                  </div>
+                <div className="copy-card" style={{ background: "rgba(255,255,255,0.08)" }}>
+                  <div className="copy-label" style={{ color: "var(--amber-100)" }}>Urgency-driven</div>
+                  <div className="copy-text" style={{ color: "var(--surface)" }}>{result.component3.final_copy}</div>
+                  <CopyButton text={result.component3.final_copy} />
                 </div>
-                <div className="copy-card" style={{ background: "var(--coral-50)", border: "1px solid var(--coral-100)" }}>
-                  <div className="copy-label" style={{ color: "var(--coral-600)" }}>Loss-Framed</div>
-                  <div className="copy-text">{result.component24.loss_message}</div>
-                  <div className="copy-meta" style={{ color: "var(--coral-600)" }}>
-                    FOMO: {result.component24.fomo_score} · Tone: {result.component24.tone_label}
-                  </div>
+                <div className="copy-card" style={{ background: "rgba(255,255,255,0.08)" }}>
+                  <div className="copy-label" style={{ color: "var(--coral-100)" }}>Emotion + loss-driven</div>
+                  <div className="copy-text" style={{ color: "var(--surface)" }}>{result.component24.loss_message}</div>
+                  <CopyButton text={result.component24.loss_message} />
                 </div>
               </div>
-              <div className="metrics-row">
-                <div className="metric-box"><div className="metric-val">{result.component24.gain_sentiment}</div><div className="metric-lbl">Gain Sentiment</div></div>
-                <div className="metric-box"><div className="metric-val">{result.component24.loss_sentiment}</div><div className="metric-lbl">Loss Sentiment</div></div>
-                <div className="metric-box"><div className="metric-val">{result.component24.emotion_survived ? "Yes" : "No"}</div><div className="metric-lbl">Emotion Survived</div></div>
+              <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 10 }}>
+                Full breakdown of how each was produced is below.
               </div>
             </div>
           </div>
 
-          <div className="nm-card" style={{ animation: "fadeUp .4s ease .3s both" }}>
-            <div className="nm-card-header"><span className="nm-card-title">Full Synthesized Output (JSON)</span></div>
-            <div className="nm-card-body">
-              <pre className="nm-json">{JSON.stringify(result, null, 2)}</pre>
-            </div>
-          </div>
+          {/* Component 1 — full detail, same card as its own page */}
+          <Component1Result result={result.component1_full} showJson={false} productText={form.product_text} category={form.category} />
+
+          {/* Component 3 — full detail, same card as its own page */}
+          <Component3Result data={result.component3} rawData={result.component3} showJson={false} />
+
+          {/* Component 2 + 4 — full detail, same card as its own page */}
+          <Component24Result result={result.component24} showJson={false} />
+
+          <ResultCode title="Result Code (JSON) — full synthesized output" data={result} />
         </div>
       )}
     </div>
