@@ -131,9 +131,8 @@ export default function Component1Page({ onResult }) {
   return (
     <div className="max-w-[1280px] mx-auto px-10 py-8 grid grid-cols-1 lg:grid-cols-[1.1fr_1.7fr] gap-8">
 
-      {/* ══════════════════════════════════════════
-          LEFT — Input panel
-      ══════════════════════════════════════════ */}
+      {/* LEFT — Input panel*/}
+      
       <div>
 
         {/* Product Input card */}
@@ -350,9 +349,7 @@ export default function Component1Page({ onResult }) {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          RIGHT — Results panel
-      ══════════════════════════════════════════ */}
+      {/* RIGHT — Results panel */}
       <div>
         {error && (
           <div style={{
@@ -409,9 +406,9 @@ export default function Component1Page({ onResult }) {
 }
 
 
-// ══════════════════════════════════════════════════════════════
+
 // ResultView — displays classification + copy + output JSON
-// ══════════════════════════════════════════════════════════════
+
 function ResultView({ result, productText, category }) {
   return <Component1Result result={result} productText={productText} category={category} />;
 }
