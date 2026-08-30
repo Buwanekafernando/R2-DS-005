@@ -5,6 +5,7 @@ import Component1Result from "../components/Component1Result.jsx";
 import Component3Result from "../components/Component3Result.jsx";
 import Component24Result from "../components/Component24Result.jsx";
 import FinalRecommendationCard from "../components/FinalRecommendationCard.jsx";
+import StrategySummaryCard from "../components/StrategySummaryCard.jsx";
 import TwoMessagesSummaryCard from "../components/TwoMessagesSummaryCard.jsx";
 import {
   CATEGORIES, EMOTIONS, defaultDemographics, defaultEmotionFor, CATEGORY_EMOTION_MAP,
@@ -252,6 +253,9 @@ export default function FullPipelinePage() {
         <div style={{ marginTop: 28 }}>
           {/* Synthesis step — the actual headline answer, shown first */}
           <FinalRecommendationCard rec={result.final_recommendation} />
+
+          {/* Strategic reasoning behind that headline answer */}
+          <StrategySummaryCard result={result} />
 
           {/* ── Plain-language summary — two alternate ready-to-use options ── */}
           <TwoMessagesSummaryCard result={result} />

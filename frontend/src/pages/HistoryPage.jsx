@@ -5,6 +5,7 @@ import Component1Result from "../components/Component1Result.jsx";
 import Component3Result from "../components/Component3Result.jsx";
 import Component24Result from "../components/Component24Result.jsx";
 import FinalRecommendationCard from "../components/FinalRecommendationCard.jsx";
+import StrategySummaryCard from "../components/StrategySummaryCard.jsx";
 import TwoMessagesSummaryCard from "../components/TwoMessagesSummaryCard.jsx";
 
 export default function HistoryPage() {
@@ -101,6 +102,7 @@ export default function HistoryPage() {
             </div>
           </div>
           {opened.result.final_recommendation && <FinalRecommendationCard rec={opened.result.final_recommendation} />}
+          <StrategySummaryCard result={opened.result} />
           <TwoMessagesSummaryCard result={opened.result} />
           {opened.result.component1_full && <Component1Result result={opened.result.component1_full} showJson={false} />}
           {opened.result.component3 && <Component3Result data={opened.result.component3} rawData={opened.result.component3} showJson={false} />}

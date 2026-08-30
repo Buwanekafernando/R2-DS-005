@@ -1,3 +1,5 @@
+import { buildStrategySummary } from "./strategySummary.js";
+
 // Builds a plain-text summary of a full strategy result, suitable for
 // handing off to a designer, printing, or emailing — the individual
 // per-card Copy buttons only grab one piece of text at a time, this
@@ -20,9 +22,25 @@ export function buildStrategyText(result) {
     lines.push("");
     lines.push(rule);
     lines.push("");
-    lines.push("SUPPORTING ANALYSIS FROM EACH AI AGENT:");
-    lines.push("");
   }
+
+  const summary = buildStrategySummary(result);
+  lines.push("MARKETING STRATEGY SUMMARY (why, not just what to write)");
+  lines.push(`How the customer decides: ${summary.customerMindset.verdict}`);
+  lines.push(`  ${summary.customerMindset.detail}`);
+  lines.push(`Urgency & Scarcity — worth using? ${summary.urgency.verdict}`);
+  lines.push(`  ${summary.urgency.detail}`);
+  lines.push(`Emotional Appeal — worth using? ${summary.emotional.verdict}`);
+  lines.push(`  ${summary.emotional.detail}`);
+  lines.push(`Loss-Framed Messaging — worth using? ${summary.lossFraming.verdict}`);
+  lines.push(`  ${summary.lossFraming.detail}`);
+  lines.push("");
+  lines.push(`RECOMMENDED OVERALL APPROACH: ${summary.overallMix}`);
+  lines.push("");
+  lines.push(rule);
+  lines.push("");
+  lines.push("SUPPORTING ANALYSIS FROM EACH AI AGENT:");
+  lines.push("");
 
   if (result.component1_full || result.component1) {
     const c1 = result.component1_full
