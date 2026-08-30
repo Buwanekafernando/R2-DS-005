@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { apiPost } from "../api.js";
-import CopyButton from "../components/CopyButton.jsx";
 import ResultCode from "../components/ResultCode.jsx";
 import Component1Result from "../components/Component1Result.jsx";
 import Component3Result from "../components/Component3Result.jsx";
 import Component24Result from "../components/Component24Result.jsx";
 import FinalRecommendationCard from "../components/FinalRecommendationCard.jsx";
+import TwoMessagesSummaryCard from "../components/TwoMessagesSummaryCard.jsx";
 import {
   CATEGORIES, EMOTIONS, defaultDemographics, defaultEmotionFor, CATEGORY_EMOTION_MAP,
   GENDER_OPTIONS, AGE_OPTIONS, DISTRICTS, OCCUPATION_OPTIONS, SPENDING_OPTIONS, CULTURE_OPTIONS,
@@ -250,29 +250,11 @@ export default function FullPipelinePage() {
 
       {result && (
         <div style={{ marginTop: 28 }}>
-          {/* ── Plain-language summary — the actual takeaway, up top ── */}
-          <div className="nm-card" style={{ animation: "fadeUp .4s ease", background: "var(--text-primary)", border: "none" }}>
-            <div className="nm-card-body">
-              <div style={{ color: "var(--surface)", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
-                Two ready-to-use marketing messages for "{result.product}"
-              </div>
-              <div className="copy-grid">
-                <div className="copy-card" style={{ background: "rgba(255,255,255,0.08)" }}>
-                  <div className="copy-label" style={{ color: "var(--amber-100)" }}>Urgency-driven</div>
-                  <div className="copy-text" style={{ color: "var(--surface)" }}>{result.component3.final_copy}</div>
-                  <CopyButton text={result.component3.final_copy} />
-                </div>
-                <div className="copy-card" style={{ background: "rgba(255,255,255,0.08)" }}>
-                  <div className="copy-label" style={{ color: "var(--coral-100)" }}>Emotion + loss-driven</div>
-                  <div className="copy-text" style={{ color: "var(--surface)" }}>{result.component24.loss_message}</div>
-                  <CopyButton text={result.component24.loss_message} />
-                </div>
-              </div>
-              <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 10 }}>
-                Full breakdown of how each was produced is below.
-              </div>
-            </div>
-          </div>
+          {/* Synthesis step — the actual headline answer, shown first */}
+          <FinalRecommendationCard rec={result.final_recommendation} />
+
+          {/* ── Plain-language summary — two alternate ready-to-use options ── */}
+          <TwoMessagesSummaryCard result={result} />
 
           {/* AI disclaimer + download */}
           <div style={{
@@ -298,9 +280,6 @@ export default function FullPipelinePage() {
 
           {/* Component 2 + 4 — full detail, same card as its own page */}
           <Component24Result result={result.component24} showJson={false} />
-
-          {/* Synthesis step — blends all four analyses into one final answer */}
-          <FinalRecommendationCard rec={result.final_recommendation} />
 
           <ResultCode title="Result Code (JSON) — full synthesized output" data={result} />
         </div>

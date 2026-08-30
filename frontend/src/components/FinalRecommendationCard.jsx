@@ -8,7 +8,7 @@ export default function FinalRecommendationCard({ rec }) {
 
   return (
     <div className="nm-card" style={{
-      animation: "fadeUp .4s ease .3s both",
+      animation: "fadeUp .4s ease both",
       border: "2px solid var(--purple-100)",
       background: "linear-gradient(180deg, var(--purple-50) 0%, var(--surface) 60%)",
     }}>
