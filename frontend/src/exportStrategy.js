@@ -73,6 +73,11 @@ export function buildStrategyText(result) {
     lines.push("LOSS-FRAMED VERSION (use sparingly, for genuine limited-time offers)");
     lines.push(result.component24.loss_message || "");
     lines.push("");
+    if (result.component24.natural_tone_message) {
+      lines.push("NATURAL-TONE VERSION (conversational rewrite of the loss-framed copy)");
+      lines.push(result.component24.natural_tone_message);
+      lines.push("");
+    }
 
     if (result.component24.visual_suggestions) {
       lines.push(rule);

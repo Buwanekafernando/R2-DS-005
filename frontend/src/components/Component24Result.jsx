@@ -77,6 +77,14 @@ export default function Component24Result({ result, showJson = true }) {
         </div>
       </div>
 
+      {result.natural_tone_message && (
+        <div className="border rounded-xl p-4">
+          <div className="text-xs uppercase text-gray-400 mb-1">Natural-Tone Version (conversational rewrite of the loss-framed copy)</div>
+          <p className="mb-2">{result.natural_tone_message}</p>
+          <CopyButton text={result.natural_tone_message} />
+        </div>
+      )}
+
       {/* Explicit labeled metrics — wrapped in a card so the boxes are actually visible */}
       <div className="border rounded-xl p-4">
         <div className="text-xs uppercase text-gray-400 mb-3">Sentiment & Safety Metrics</div>

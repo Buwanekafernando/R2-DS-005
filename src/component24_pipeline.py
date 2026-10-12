@@ -13,6 +13,10 @@ STAGE 2 — Component 4 (Loss Framing Agent) converts that copy into a
 STAGE 3 — Component 2's RoBERTa re-checks whether the target emotion
           survived the loss reframing.
 
+STAGE 4 — Natural-Tone Version: the loss-framed message is rewritten in a
+          more conversational voice (natural_tone_message). The original
+          loss_message and its metrics are unchanged.
+
 This is a faithful port of the original pipeline.py — only the import
 paths were updated for the unified project structure.
 -------------------------------------------------------------------
@@ -27,6 +31,7 @@ from src.component2.emotion_agent import (
 )
 from src.component2.model_loader import load_emotion_model, predict_emotions
 from src.component4.loss_framing_agent import run_loss_agent
+from src.component4.tone_naturalizer import naturalize_tone
 
 EMOTION_ATTEMPTS = 3   # retry budget for the emotion-generation stage
 
@@ -106,6 +111,9 @@ def run_component24_pipeline(product_name, category, target_audience="", feature
     # STAGE 3 — RoBERTa re-check: did the target emotion survive?
     post_top1, _, post_target_score = score_for_emotion(loss["loss_message"], target_emotion)
 
+    # STAGE 4 — Natural-tone rewrite of the loss-framed message
+    natural_tone_message = naturalize_tone(loss["loss_message"], category)
+
     return {
         "product_name": product_name,
         "category": category,
@@ -120,6 +128,7 @@ def run_component24_pipeline(product_name, category, target_audience="", feature
 
         # --- Stage 2: loss agent (six outputs) ---
         "loss_message": loss["loss_message"],
+        "natural_tone_message": natural_tone_message,
         "gain_sentiment": loss["gain_sentiment"],
         "loss_sentiment": loss["loss_sentiment"],
         "fomo_score": loss["fomo_score"],

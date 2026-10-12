@@ -348,6 +348,7 @@ def generate_strategy(input_data: OrchestratorInput):
                 "emotion_after_loss": c24_result["emotion_after_loss"],
                 "emotion_after_score": c24_result["emotion_after_score"],
                 "loss_message": c24_result["loss_message"],
+                "natural_tone_message": c24_result.get("natural_tone_message"),
                 "gain_sentiment": c24_result["gain_sentiment"],
                 "loss_sentiment": c24_result["loss_sentiment"],
                 "fomo_score": c24_result["fomo_score"],

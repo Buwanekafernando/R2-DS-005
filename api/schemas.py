@@ -92,6 +92,7 @@ class Component24Summary(BaseModel):
     emotion_after_loss   : Optional[str] = None
     emotion_after_score  : float
     loss_message         : str
+    natural_tone_message : Optional[str] = None   # conversational rewrite of loss_message
     gain_sentiment       : float
     loss_sentiment       : float
     fomo_score           : int
