@@ -20,27 +20,7 @@ load_dotenv(os.path.join(BASE_DIR, "config", ".env"))
 
 
 class DualSystemAgent:
-    """
-    Component 1 — Dual System Reasoning Agent
-    Classifies a product as System 1 or System 2 and
-    generates psychologically aligned marketing copy.
-
-    Usage (product only — original behaviour unchanged):
-        agent = DualSystemAgent()
-        result = agent.run("Sony Headphones", "Electronics")
-        print(result['agent_output'])
-
-    Usage (with demographic profile — new behaviour):
-        result = agent.run(
-            "Sony Headphones", "Electronics",
-            demographics={
-                "gender": "Male",
-                "age_range": "25 – 34",
-                "district": "Colombo",
-                ...
-            }
-        )
-    """
+    
 
     def __init__(self, model_path="models/roberta_checkpoint"):
 
@@ -253,7 +233,7 @@ class DualSystemAgent:
                 else "Moderate rational purchase signal detected."
             )
 
-        # ── NEW: append demographic context to reasoning ──
+        #  append demographic context to reasoning ─
         if demographics is not None and classification_method != "product text only (RoBERTa)":
             age      = demographics.get('age_range', '')
             district = demographics.get('district', '')
@@ -335,7 +315,7 @@ class DualSystemAgent:
         """
         Main entry point — runs the full pipeline.
         Returns complete JSON-ready dictionary.
-        Called by api/main.py and ui/app.py
+        
 
         Args:
             product_text : str

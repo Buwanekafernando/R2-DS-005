@@ -1,4 +1,4 @@
-# src/generator.py
+
 
 import os
 import time
@@ -26,9 +26,9 @@ GROK_MODEL = "grok-3"
 print(f"Grok client ready | Model: {GROK_MODEL}")
 
 
-# ════════════════════════════════════════════════════════
+
 # GENERATION
-# ════════════════════════════════════════════════════════
+
 
 def generate_copy(prompt, retries=3):
     """Single entry point for copy generation. Called by src/agent.py"""
@@ -89,9 +89,7 @@ def generate_copy(prompt, retries=3):
     return None
 
 
-# ════════════════════════════════════════════════════════
 # PROMPT BUILDERS
-# ════════════════════════════════════════════════════════
 
 def build_emotional_prompt(product_text, category, confidence):
     if confidence > 0.85:
@@ -166,13 +164,8 @@ Write a SHORT marketing message (2-3 sentences, max 60 words) that:
 
 Write ONLY the marketing copy. No labels, no explanations."""
 
-# ════════════════════════════════════════════════════════
+
 # CHANNEL-SPECIFIC COPY VARIANTS
-# Takes the already-chosen winning copy and reformats it for different
-# marketing channels, rather than writing something unrelated from
-# scratch — keeps the core message and psychological strategy consistent
-# across every format the business owner actually needs to publish.
-# ════════════════════════════════════════════════════════
 
 def build_social_media_prompt(product_text, category, winning_copy):
     return f"""You are a social media copywriter. Adapt the marketing message below into

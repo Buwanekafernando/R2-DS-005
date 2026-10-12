@@ -17,9 +17,7 @@ function SummaryRow({ icon, title, verdict, detail, verdictColor }) {
   );
 }
 
-// Answers "why," not "what to write" — a decision-oriented briefing a
-// business owner can use to plan a campaign, sitting alongside (not
-// replacing) the ready-to-use copy in FinalRecommendationCard.
+
 export default function StrategySummaryCard({ result }) {
   const summary = buildStrategySummary(result);
 

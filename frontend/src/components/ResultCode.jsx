@@ -1,8 +1,6 @@
 import { useState } from "react";
 
-// Collapsed by default — a business user never has to see this unless they
-// choose to. Developers/panel reviewers can expand it to see the exact
-// model output backing the plain-language cards above it.
+
 export default function ResultCode({ title = "Result Code (JSON)", data }) {
   const [open, setOpen] = useState(false);
 

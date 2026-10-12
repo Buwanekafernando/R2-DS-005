@@ -1,8 +1,6 @@
 import CopyButton from "./CopyButton.jsx";
 
-// The synthesis step: one blended, AI-reasoned recommendation combining
-// all four components' analyses into a single ready-to-use answer.
-// `rec` is the FinalRecommendation shape: { recommendation, rationale, best_for }
+
 export default function FinalRecommendationCard({ rec }) {
   if (!rec) return null;
 
