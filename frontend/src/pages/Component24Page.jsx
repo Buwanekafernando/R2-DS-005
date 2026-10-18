@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 import { apiPost } from "../api.js";
 import Component24Result from "../components/Component24Result.jsx";
-import { CATEGORIES, EMOTIONS, CATEGORY_EMOTION_MAP, defaultEmotionFor } from "../constants.js";
-
-// Local alias, kept so the rest of this file (which was built against
-// your friend's original naming) doesn't need every reference rewritten.
-const recommendedEmotionByCategory = CATEGORY_EMOTION_MAP;
-
-// Thin wrapper — full rendering lives in the shared Component24Result component.
-function ResultCard({ result }) {
-  return <Component24Result result={result} />;
-}
+import PageHeader from "../components/PageHeader.jsx";
+import EmotionPicker from "../components/EmotionPicker.jsx";
+import { CATEGORIES, CATEGORY_EMOTION_MAP, categoryLabel, defaultEmotionFor, AGENTS } from "../constants.js";
+import { G } from "../components/Term.jsx";
 
 export default function Component24Page({ baseCopy, sourceProductName }) {
   const [form, setForm] = useState({
@@ -21,9 +15,10 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
     target_emotion: "excitement",
   });
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);           // single run
-  const [variations, setVariations] = useState([]);     // multi run
+  const [variations, setVariations] = useState([]);     // one per suitable feeling
 
   // Pre-fill product name from Component 1 if available
   useEffect(() => {
@@ -31,18 +26,16 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
   }, [sourceProductName]);
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+  const recommended = CATEGORY_EMOTION_MAP[form.category] || [];
 
-  // recommended emotions for the currently selected category
-  const recommended = recommendedEmotionByCategory[form.category] || [];
-
-  // one pipeline call for a given emotion
-  const callPipeline = async (emotion) => {
-    return apiPost("/component24/pipeline", { ...form, target_emotion: emotion, base_copy: baseCopy || undefined });
-  };
+  // One pipeline call for a given emotion. An empty emotion means "let the
+  // backend choose", which it does from the product type.
+  const callPipeline = (emotion) =>
+    apiPost("/component24/pipeline", { ...form, target_emotion: emotion || null, base_copy: baseCopy || undefined });
 
   const runPipeline = async () => {
-    if (!form.product_name.trim()) { setError("Please enter a product name."); return; }
-    setLoading(true); setError(""); setResult(null); setVariations([]);
+    if (!form.product_name.trim()) { setError("Add a product name first."); return; }
+    setLoading(true); setLoadingMsg("Writing your message and checking the feeling…"); setError(""); setResult(null); setVariations([]);
     try {
       setResult(await callPipeline(form.target_emotion));
     } catch (err) {
@@ -52,18 +45,18 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
     }
   };
 
-  // Generate one variation per recommended emotion for this category.
+  // One version per suitable feeling for this product type
   const generateVariations = async () => {
-    if (!form.product_name.trim()) { setError("Please enter a product name."); return; }
-    const emotions = recommendedEmotionByCategory[form.category] || [];
-    if (emotions.length === 0) { setError("No recommended emotions for this category."); return; }
+    if (!form.product_name.trim()) { setError("Add a product name first."); return; }
+    if (recommended.length === 0) { setError("There are no suggested feelings for this product type."); return; }
 
     setLoading(true); setError(""); setResult(null); setVariations([]);
     try {
       const results = [];
-      // sequential (not Promise.all) to stay under the Groq rate limit
-      for (const emotion of emotions) {
-        results.push(await callPipeline(emotion));
+      // One at a time (not all at once) to stay under the Groq rate limit
+      for (let i = 0; i < recommended.length; i++) {
+        setLoadingMsg(`Writing version ${i + 1} of ${recommended.length} (${recommended[i]})…`);
+        results.push(await callPipeline(recommended[i]));
       }
       setVariations(results);
     } catch (err) {
@@ -74,103 +67,83 @@ export default function Component24Page({ baseCopy, sourceProductName }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-1">Emotional Appeal & Loss-Framed Messaging</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Generates two ready-to-use versions of your ad copy: one built to evoke a specific feeling
-        (joy, trust, excitement...), and a second version of that same message reframed around what
-        customers risk missing out on. Pick whichever fits the moment — see the guidance on each below.
-      </p>
+    <div className="page">
+      <PageHeader
+        title={`${AGENTS.feeling.emoji} What they feel and would miss`}
+        intro={`Try the emotion helpers on their own (${AGENTS.feeling.component}: ${AGENTS.feeling.research}, and ${AGENTS.missout.component}: ${AGENTS.missout.research}). You get a message with one clear feeling, checked by our emotion AI, plus a "don't miss out" version.`}
+      />
 
       {baseCopy && (
-        <div className="border rounded-lg px-4 py-3 mb-4 text-sm" style={{ background: "var(--purple-50)", borderColor: "var(--purple-100)", color: "var(--purple-800)" }}>
-          Using your Buying Psychology result as the base for emotional infusion: <em>"{baseCopy.slice(0, 100)}{baseCopy.length > 100 ? "…" : ""}"</em>
+        <div className="check-pill tone-info" style={{ display: "block", marginBottom: 16 }}>
+          Starting from your "How they decide" message: <em>"{baseCopy.slice(0, 120)}{baseCopy.length > 120 ? "…" : ""}"</em>
         </div>
       )}
 
-      {/* ---- Input ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-        <div>
-          <label className="block text-sm font-medium mb-1">Product name</label>
-          <input className="w-full border rounded-lg px-3 py-2" value={form.product_name}
-            onChange={update("product_name")} placeholder="e.g. Sony WH-1000XM5" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Category</label>
-          <select className="w-full border rounded-lg px-3 py-2" value={form.category}
-            onChange={(e) => {
-              const category = e.target.value;
-              setForm({ ...form, category, target_emotion: defaultEmotionFor(category) });
-            }}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Target audience</label>
-          <input className="w-full border rounded-lg px-3 py-2" value={form.target_audience}
-            onChange={update("target_audience")} placeholder="e.g. commuters, remote workers" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Target emotion</label>
-          <select className="w-full border rounded-lg px-3 py-2" value={form.target_emotion}
-            onChange={update("target_emotion")}>
-            {EMOTIONS.map((e) => <option key={e} value={e}>{e}</option>)}
-          </select>
-
-          {/* ---- Recommendation chips ---- */}
-          {recommended.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-gray-500">Recommended for {form.category}:</span>
-              {recommended.map((emo) => (
-                <button
-                  key={emo}
-                  type="button"
-                  onClick={() => setForm({ ...form, target_emotion: emo })}
-                  className={`text-xs rounded-full px-3 py-1 border transition ${
-                    form.target_emotion === emo
-                      ? "bg-black text-white border-black"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  {emo}
-                </button>
-              ))}
+      <div className="nm-card">
+        <div className="nm-card-body">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+            <div>
+              <label className="field-label" htmlFor="c24-name">Product name</label>
+              <input id="c24-name" className="nm-input" value={form.product_name} onChange={update("product_name")} placeholder="e.g. Sony WH-1000XM5" />
             </div>
-          )}
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Key features</label>
-          <textarea className="w-full border rounded-lg px-3 py-2" rows={2} value={form.features}
-            onChange={update("features")} placeholder="e.g. active noise cancellation, 30h battery" />
+            <div>
+              <label className="field-label" htmlFor="c24-cat">Product type</label>
+              <select
+                id="c24-cat"
+                className="nm-select"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value, target_emotion: defaultEmotionFor(e.target.value) })}
+              >
+                {CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="c24-aud">Who usually buys it? <span className="field-optional">optional</span></label>
+              <input id="c24-aud" className="nm-input" value={form.target_audience} onChange={update("target_audience")} placeholder="e.g. commuters, remote workers" />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="c24-feat">What makes it special? <span className="field-optional">optional</span></label>
+              <input id="c24-feat" className="nm-input" value={form.features} onChange={update("features")} placeholder="e.g. noise cancelling, 30-hour battery" />
+            </div>
+          </div>
+
+          <span className="field-label" style={{ marginTop: 24 }}>Which feeling should it carry?</span>
+          <EmotionPicker value={form.target_emotion} category={form.category} onChange={(v) => setForm({ ...form, target_emotion: v })} />
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
+            <button onClick={runPipeline} disabled={loading} className="nm-btn-primary" style={{ flex: "1 1 240px" }}>
+              Create message
+            </button>
+            <button onClick={generateVariations} disabled={loading || recommended.length === 0} className="nm-btn-secondary" style={{ flex: "1 1 240px" }}>
+              Compare {recommended.length} suitable feelings
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 mt-4">
-        <button onClick={runPipeline} disabled={loading}
-          className="bg-black text-white rounded-lg px-5 py-2 disabled:opacity-50">
-          {loading ? "Running…" : "Generate"}
-        </button>
-        <button onClick={generateVariations} disabled={loading}
-          className="border border-black rounded-lg px-5 py-2 disabled:opacity-50">
-          {loading ? "Generating…" : `Generate variations (${recommended.length})`}
-        </button>
-      </div>
+      {error && <div className="error-box" role="alert">{error}</div>}
 
-      {error && <p className="text-red-600 mt-4">{error}</p>}
+      {loading && (
+        <div className="nm-card" aria-live="polite">
+          <div className="nm-card-body empty-state">
+            <div className="spinner" />
+            <div className="empty-title">{loadingMsg}</div>
+            <div className="empty-desc"><G>Our emotion AI checks each message and rewrites it if the feeling is off, with up to 3 tries.</G></div>
+          </div>
+        </div>
+      )}
 
-      {/* ---- Single result ---- */}
-      {result && <div className="mt-8"><ResultCard result={result} /></div>}
+      {result && <div style={{ marginTop: 24 }}><Component24Result result={result} /></div>}
 
-      {/* ---- Variations (one per recommended emotion) ---- */}
       {variations.length > 0 && (
-        <div className="mt-8 space-y-8">
+        <div style={{ marginTop: 24, display: "grid", gap: 28 }}>
           {variations.map((v, i) => (
-            <div key={i}>
-              <div className="text-sm font-semibold mb-2">
-                Variation {i + 1} — target: {v.target_emotion}
-              </div>
-              <ResultCard result={v} />
-            </div>
+            <section key={i} aria-label={`Version ${i + 1}`}>
+              <h2 className="section-heading" style={{ marginTop: 0, textTransform: "none" }}>
+                Version {i + 1}: {v.target_emotion}
+              </h2>
+              <Component24Result result={v} />
+            </section>
           ))}
         </div>
       )}

@@ -20,7 +20,27 @@ load_dotenv(os.path.join(BASE_DIR, "config", ".env"))
 
 
 class DualSystemAgent:
-    
+    """
+    Component 1 — Dual System Reasoning Agent
+    Classifies a product as System 1 or System 2 and
+    generates psychologically aligned marketing copy.
+
+    Usage (product only — original behaviour unchanged):
+        agent = DualSystemAgent()
+        result = agent.run("Sony Headphones", "Electronics")
+        print(result['agent_output'])
+
+    Usage (with demographic profile — new behaviour):
+        result = agent.run(
+            "Sony Headphones", "Electronics",
+            demographics={
+                "gender": "Male",
+                "age_range": "25 – 34",
+                "district": "Colombo",
+                ...
+            }
+        )
+    """
 
     def __init__(self, model_path="models/roberta_checkpoint"):
 
@@ -219,26 +239,34 @@ class DualSystemAgent:
         confidence = max(s1_prob, s2_prob)
         mode       = "System1" if pred == 1 else "System2"
 
-        # Reasoning
+        # Reasoning — written in plain, friendly language for business owners
         if pred == 1:
             reason = (
-                "Strong emotional/impulsive purchase signal detected."
+                "This looks like a buy-with-the-heart product. The way it's described "
+                "leans on feelings, looks and impulse, so people will probably decide "
+                "quickly rather than compare specs."
                 if confidence > 0.85
-                else "Moderate emotional purchase signal detected."
+                else
+                "This leans toward a buy-with-the-heart product, though it isn't clear-cut — "
+                "there's a bit of practical thinking in the mix too."
             )
         else:
             reason = (
-                "Strong rational/deliberate purchase signal detected."
+                "This looks like a think-it-through product. The details and practical "
+                "benefits suggest people will compare options and check the facts "
+                "before they buy."
                 if confidence > 0.85
-                else "Moderate rational purchase signal detected."
+                else
+                "This leans toward a think-it-through product, though it isn't clear-cut — "
+                "feelings will play a part in the decision too."
             )
 
-        #  append demographic context to reasoning ─
+        # Mention the customer profile when it was used in the decision
         if demographics is not None and classification_method != "product text only (RoBERTa)":
             age      = demographics.get('age_range', '')
             district = demographics.get('district', '')
             if age and district:
-                reason += f" Profile: {age} from {district}."
+                reason += f" We also took your typical customer into account ({age}, from {district})."
 
         return {
             "cognitive_mode":          mode,
@@ -311,11 +339,31 @@ class DualSystemAgent:
         }
 
   
+    @staticmethod
+    def _friendly_explanation(mode, confidence, strategy, copy_type):
+        """Plain-language 'what we picked and why' sentence for the UI."""
+        pct = f"{confidence:.0%}"
+        if copy_type == "hybrid":
+            return (
+                f"It's a close call: your customers could go either way, so we mixed a "
+                f"little heart with a little logic and went with the {strategy} message "
+                f"because it fit best."
+            )
+        if strategy == "emotional":
+            return (
+                f"This product sells on feeling, and we're {pct} sure of that, "
+                f"so we've gone with the emotional message."
+            )
+        return (
+            f"Buyers will probably want to think this one through (we're {pct} sure), "
+            f"so we've gone with the fact-based message."
+        )
+
     def run(self, product_text, category="unknown", demographics=None):
         """
         Main entry point — runs the full pipeline.
         Returns complete JSON-ready dictionary.
-        
+        Called by api/main.py and ui/app.py
 
         Args:
             product_text : str
@@ -399,10 +447,8 @@ class DualSystemAgent:
             "recommendation": {
                 "strategy":      strategy,
                 "selected_copy": recommended_copy,
-                "explanation": (
-                    f"Product classified as {mode} with "
-                    f"{confidence:.0%} confidence. "
-                    f"{strategy.capitalize()} strategy selected."
+                "explanation": self._friendly_explanation(
+                    mode, confidence, strategy, copy_type
                 )
             },
             # ── This is what Components 2, 3, 4 receive ──

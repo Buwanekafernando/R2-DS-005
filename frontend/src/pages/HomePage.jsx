@@ -1,168 +1,204 @@
-const COMPONENTS = [
+import { AGENTS, EXAMPLES, agentColors, agentVars } from "../constants.js";
+import { G, Term } from "../components/Term.jsx";
+
+const HELPERS = [
   {
-    n: "1",
-    title: "Dual-System Reasoning",
-    tag: "How people decide",
-    color: "blue",
-    desc: "Figures out whether a customer buying this product is more likely to decide with their gut (fast, emotional) or their head (slow, careful comparison) — then writes marketing copy matched to that.",
+    agent: AGENTS.decide,
+    desc: "Works out whether people buy your product on gut feeling or only after comparing, then writes in the style that suits them.",
   },
   {
-    n: "2",
-    title: "Emotion Propagation",
-    tag: "What they feel",
-    color: "teal",
-    desc: "Picks the right emotion for the product category — trust, excitement, confidence — and rewrites the message so that feeling comes through clearly, plus suggests matching colors and imagery.",
+    agent: AGENTS.urgency,
+    desc: "Adds the right amount of “act now”, such as limited stock, and checks it doesn't sound pushy or fake.",
   },
   {
-    n: "3",
-    title: "Scarcity Optimization",
-    tag: "Why act now",
-    color: "amber",
-    desc: "Adds urgency — limited stock, time pressure — calibrated to the product, and checks the result doesn't sound so aggressive that it damages customer trust.",
+    agent: AGENTS.feeling,
+    desc: "Writes your message so it carries one clear feeling, like trust or excitement. Our own emotion AI reads it back to check the feeling really comes through, and suggests matching colours.",
   },
   {
-    n: "4",
-    title: "Loss Framing",
-    tag: "What they'd miss",
-    color: "coral",
-    desc: "Rewrites the message around what the customer loses by waiting, rather than what they gain by buying — a proven, subtle way to increase urgency without sounding pushy.",
+    agent: AGENTS.missout,
+    desc: "Rewrites the message around what people miss if they wait. Used gently, it helps people decide without scaring them.",
   },
 ];
 
-export default function HomePage({ onGetStarted }) {
+const HOW = [
+  { who: "Your turn", title: "Describe your product", text: "Its name, what kind of product it is, a sentence or two, and a rough idea of who buys it. About two minutes.", color: "cyan" },
+  { who: "We do the work", title: "Four AI helpers get to work", text: "Each one is built on a proven idea from consumer psychology. You can watch them work, step by step.", color: "violet" },
+  { who: "Your turn", title: "Copy your message", text: "One message ready to post, plus other versions for sales and offers, and colour ideas for your picture.", color: "orange" },
+];
+
+const FAQ = [
+  ["Why does it ask about my customer?", "Some products are bought on feeling and impulse, like a treat or perfume. Others are bought after research, like a laptop. A rough idea of your typical customer helps the AI judge which kind your product is."],
+  ["What is the “feeling check”?", "After the message is written, our own emotion AI (a RoBERTa model trained on thousands of real comments) reads it back and says which feeling comes across. If it's not the one you chose, the message is rewritten and checked again, with up to 3 tries in total."],
+  ["What does “urgency” mean, and what are low, medium and high?", "Urgency is wording that encourages people to act now, such as “limited stock”. Low is a gentle nudge, high is strong (“only 2 left!”). The AI picks the level that suits your product without sounding fake."],
+  ["What is a trust score?", "An estimate of how believable the urgency wording will feel to a real customer. A low score isn't an error. It means the wording may feel pushy for this product, so use it only for short, genuine offers."],
+  ["What is the sentiment score?", "How positive or negative the words sound, from −1 (very negative) to +1 (very positive). It's used to make sure urgency wording doesn't turn customers off."],
+  ["What is a FOMO score?", "FOMO means “fear of missing out”. The score counts phrases like “don't miss out” or “limited time”. A higher number means stronger urgency."],
+  ["What is the “don't miss out” version?", "The same message, rewritten around what customers lose by waiting instead of what they gain by buying. People often react more strongly to avoiding a loss, so it works well for real limited-time offers. Use it sparingly."],
+  ["What does the confidence percentage mean?", "How sure the AI is about its own decision, for example that your product is bought on feeling. It's not a score for how good the message is."],
+  ["Is my information saved anywhere?", "Your answers and results are saved only in this browser on this device, so you can come back to them in History. Clearing your browser data removes them."],
+];
+
+const WORDS = ["urgency", "FOMO", "sentiment score", "trust score", "loss framing", "RoBERTa", "call to action", "channel"];
+
+export default function HomePage({ onGetStarted, onTryExample }) {
   return (
     <div>
-      {/* Hero */}
-      <div className="max-w-[900px] mx-auto px-10 pt-20 pb-16 text-center">
-        <span className="nm-badge" style={{ background: "var(--purple-50)", color: "var(--purple-800)", border: "1px solid var(--purple-100)" }}>
-          For small & growing businesses
-        </span>
-        <h1 className="font-display" style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-1.5px", margin: "18px 0 16px", lineHeight: 1.1 }}>
-          Marketing copy that thinks<br />like your customer.
-        </h1>
-        <p style={{ fontSize: 16, color: "var(--text-secondary)", maxWidth: 560, margin: "0 auto 32px", lineHeight: 1.6 }}>
-          Describe your product once. Four AI agents — each built on a different
-          principle of consumer psychology — work together to turn it into a
-          marketing strategy: how to frame it, what emotion to lead with, and
-          when urgency actually helps instead of hurts.
-        </p>
-        <button className="nm-btn-primary" style={{ width: "auto", padding: "14px 32px", fontSize: 15 }} onClick={onGetStarted}>
-          Get Started ↗
-        </button>
-      </div>
+      {/* ── Hero: what it is, what to do, and a real-looking result ── */}
+      <section className="night hero">
 
-      {/* How it works */}
-      <div className="max-w-[1100px] mx-auto px-10 pb-10">
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <h2 className="font-display" style={{ fontSize: 24, fontWeight: 700 }}>How it works</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 6 }}>
-            One product description in. Four psychology-backed agents run automatically.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {COMPONENTS.map((c) => (
-            <div key={c.n} className="nm-card" style={{ margin: 0 }}>
-              <div className="nm-card-body" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <div
-                  className="chain-circle"
-                  style={{
-                    flexShrink: 0,
-                    borderColor: `var(--${c.color}-100)`,
-                    background: `var(--${c.color}-50)`,
-                    color: `var(--${c.color}-600)`,
-                  }}
-                >
-                  {c.n}
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--text-muted)", marginBottom: 2 }}>
-                    {c.tag}
-                  </div>
-                  <div className="font-display" style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{c.title}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{c.desc}</div>
-                </div>
+        <div className="wrap">
+          <div className="hero-grid">
+            <div>
+              <span className="hero-pill"><span aria-hidden="true">🏪</span> For small and growing businesses</span>
+              <h1 className="hero-title">Marketing copy that thinks like your customer.</h1>
+              <p className="hero-sub">
+                Describe your product. Four AI helpers work out how your customers decide, the feeling
+                to lead with and how much urgency to use. You get one message, ready to post.
+              </p>
+              <button className="btn-sun" onClick={onGetStarted}>✨ Create my message</button>
+              <p style={{ fontSize: 15, fontWeight: 700, margin: "26px 0 10px", color: "var(--on-night)" }}>
+                Or watch it work with an example:
+              </p>
+              <div className="chip-row">
+                {EXAMPLES.map((ex) => (
+                  <button key={ex.id} type="button" className="choice-chip chip-dark" onClick={() => onTryExample(ex.id)}>
+                    <span className="chip-emoji" aria-hidden="true">{ex.emoji}</span>{ex.label}
+                  </button>
+                ))}
               </div>
             </div>
+
+            <div style={{ position: "relative", padding: "24px 8px" }}>
+              <SampleResult />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works: a real 3-step sequence, with who does what ── */}
+      <section className="wrap section" aria-labelledby="how-h">
+        <h2 id="how-h" className="section-title">How it works</h2>
+        <p className="section-lede">Three steps. You only do two of them.</p>
+        <ol className="steps-row">
+          {HOW.map((h, i) => (
+            <li key={h.title} className="nm-card" style={{ margin: 0, ...agentVars(h.color) }}>
+              <div className="nm-card-body">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
+                  <span className="how-num" aria-hidden="true" style={{ background: "var(--h-solid)", marginBottom: 0 }}>{i + 1}</span>
+                  <span className="nm-badge" style={{ background: "var(--h-bg)", color: "var(--h-ink)", border: "1px solid var(--h-border)" }}>{h.who}</span>
+                </div>
+                <h3 style={{ fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{h.title}</h3>
+                <p style={{ fontSize: 15.5, color: "var(--text-secondary)", lineHeight: 1.6 }}><G>{h.text}</G></p>
+              </div>
+            </li>
           ))}
-        </div>
-      </div>
+        </ol>
+      </section>
 
-      {/* Understanding your results — glossary for non-technical users */}
-      <div className="max-w-[900px] mx-auto px-10 pb-16">
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2 className="font-display" style={{ fontSize: 24, fontWeight: 700 }}>Understanding Your Results</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 6, maxWidth: 560, margin: "6px auto 0" }}>
-            You don't need a marketing or data-science background to use this. Here's what
-            the terms on your results page actually mean.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <GlossaryItem
-            term="Confidence Score"
-            meaning="How sure the AI is about its own classification — shown as a percentage. A higher number means the AI found clearer signals in your product description; it doesn't mean the copy itself is better."
-          />
-          <GlossaryItem
-            term='"Emotional" vs "Rational" product'
-            meaning="Some products get bought on impulse and feeling (emotional) — think perfume or a treat. Others get bought after research and comparison (rational) — think a laptop or insurance. The AI decides which applies to your product and writes copy to match."
-          />
-          <GlossaryItem
-            term="Scarcity Intensity (Low / Medium / High)"
-            meaning="How strongly the copy pushes urgency — limited stock, time pressure, high demand. Low is subtle, High is aggressive ('only 2 left!'). The AI picks a level it thinks fits your product without sounding fake."
-          />
-          <GlossaryItem
-            term="Trust Score"
-            meaning="An estimate of how believable the urgency messaging will feel to a real customer. A low trust score or a 'Warning' doesn't mean something is broken — it's a heads-up that the messaging might come across as pushy for this particular product, so use it carefully or for a short, genuine promotion only."
-          />
-          <GlossaryItem
-            term="Sentiment Score"
-            meaning="How positive or negative a piece of text sounds, on a scale from -1 (very negative) to +1 (very positive). Used to check that urgency-driven copy doesn't accidentally turn customers off."
-          />
-          <GlossaryItem
-            term="FOMO Score"
-            meaning={'FOMO = "Fear Of Missing Out." This counts how many urgency phrases (like "don\'t miss out" or "limited time") appear in a message. A higher number means stronger urgency language.'}
-          />
-          <GlossaryItem
-            term="Target Emotion"
-            meaning="The specific feeling — excitement, trust, confidence, and so on — the AI is trying to build into your marketing copy for this product category."
-          />
-          <GlossaryItem
-            term="Loss-Framed Copy"
-            meaning="A version of your message rewritten around what the customer loses by not buying, instead of what they gain by buying. Research shows people often respond more strongly to avoiding a loss than gaining a benefit — best used sparingly, for real limited-time offers."
-          />
-        </div>
-      </div>
-
-      {/* What you get */}
-      <div className="max-w-[900px] mx-auto px-10 py-16 text-center">
-        <h2 className="font-display" style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
-          What you'll get
-        </h2>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto 28px", lineHeight: 1.6 }}>
-          Fill in your product details and your customer profile once. You'll get
-          a complete marketing strategy back — classification, ready-to-use copy,
-          and a plain-language explanation of why it was written that way.
+      {/* ── The four helpers, each in its own colour ── */}
+      <section className="wrap section" aria-labelledby="helpers-h">
+        <h2 id="helpers-h" className="section-title">Meet the four AI helpers</h2>
+        <p className="section-lede">
+          Each one handles one part of a good marketing message. Look out for their colours in your results.
         </p>
-        <button className="nm-btn-secondary" style={{ padding: "12px 28px" }} onClick={onGetStarted}>
-          Try it with your product →
-        </button>
-      </div>
+        <div className="helpers-row">
+          {HELPERS.map(({ agent, desc }) => {
+            const c = agentColors(agent.color);
+            return (
+              <article key={agent.research} className="helper-card" style={{ ...agentVars(agent.color), borderColor: c.border }}>
+                <span className="helper-icon" aria-hidden="true">{agent.emoji}</span>
+                <div>
+                  <h3 style={{ fontWeight: 800, fontSize: 20, marginBottom: 6, color: c.ink }}>{agent.name}</h3>
+                  <p style={{ fontSize: 15.5, color: "var(--text-secondary)", lineHeight: 1.6 }}><G>{desc}</G></p>
+                  <p style={{ fontSize: 13.5, fontWeight: 700, color: c.ink, marginTop: 12, display: "inline-block", background: c.bg, border: `1px solid ${c.border}`, padding: "3px 11px", borderRadius: 12 }}>
+                    {agent.component}: <Term>{agent.research}</Term>
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Questions + plain-English word list, side by side ── */}
+      <section className="wrap section" aria-labelledby="faq-h">
+        <div className="faq-split">
+          <div>
+            <h2 id="faq-h" className="section-title">Questions about your results</h2>
+            <p className="section-lede">You don't need a marketing background. Tap a question to see the answer.</p>
+            {FAQ.map(([q, a]) => (
+              <details key={q} className="faq">
+                <summary>{q}</summary>
+                <div className="faq-body"><G>{a}</G></div>
+              </details>
+            ))}
+          </div>
+          <aside className="words-card" aria-labelledby="words-h">
+            <h2 id="words-h" className="section-title" style={{ fontSize: 24 }}>Words you'll see</h2>
+            <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 16 }}>
+              Anywhere in the app, hover over, tap or Tab to a word with a dotted underline to see what it means.
+            </p>
+            <dl>
+              {WORDS.map((w) => (
+                <div key={w}>
+                  <dt><Term>{w}</Term></dt>
+                </div>
+              ))}
+            </dl>
+            <p style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 16 }}>
+              Try it now: hover over any word above.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section className="wrap section" style={{ paddingBottom: 96 }}>
+        <div className="night cta-band">
+          <h2 className="section-title" style={{ marginBottom: 10 }}>Ready to try it with your product?</h2>
+          <p style={{ fontSize: 17, color: "var(--on-night-soft)", marginBottom: 24 }}>About two minutes to fill in, half a minute to create.</p>
+          <button className="btn-sun" onClick={onGetStarted}>✨ Create my message</button>
+        </div>
+      </section>
     </div>
   );
 }
 
-function GlossaryItem({ term, meaning }) {
+// A static picture of what a finished result looks like, so first-time
+// visitors understand the output before filling anything in.
+function SampleResult() {
   return (
-    <div className="nm-card" style={{ margin: 0 }}>
-      <div className="nm-card-body" style={{ padding: "14px 20px" }}>
-        <div className="font-display" style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: "var(--text-primary)" }}>
-          {term}
+    <figure aria-label="Example of a finished result" style={{ margin: 0, position: "relative", zIndex: 2 }}>
+      <div className="result-hero" style={{ marginBottom: 0, boxShadow: "var(--shadow-card)" }}>
+        <div className="result-hero-top">
+          <span className="result-hero-kicker"><span aria-hidden="true">✨</span> Your message is ready</span>
+          <span className="nm-badge" style={{ background: "var(--violet-50)", color: "var(--violet-800)", border: "1px solid var(--violet-100)" }}>
+            Best for: Instagram posts
+          </span>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-          {meaning}
+        <p className="result-message" style={{ fontSize: 18 }}>
+          Made with the Ayurvedic herbs Sri Lankan families have trusted for generations, our lavender
+          neem lotion keeps dry skin soft from morning to night. Gentle, natural and made to last.
+        </p>
+        <div className="result-section">
+          <div className="check-row">
+            <span className="check-pill tone-good"><span className="check-icon" aria-hidden="true">🤝</span><span>Feeling check: comes across as <b>trust</b></span></span>
+            <span className="check-pill tone-good"><span className="check-icon" aria-hidden="true">🙂</span><span>Tone: friendly and positive</span></span>
+          </div>
+        </div>
+        <div className="result-section" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {[AGENTS.decide, AGENTS.urgency, AGENTS.feeling, AGENTS.missout].map((a) => {
+            const c = agentColors(a.color);
+            return (
+              <span key={a.research} className="nm-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.ink }}>
+                {a.emoji} {a.name}
+              </span>
+            );
+          })}
         </div>
       </div>
-    </div>
+      <figcaption style={{ fontSize: 14, color: "var(--on-night-soft)", marginTop: 14, textAlign: "center" }}>
+        An example of what you get back
+      </figcaption>
+    </figure>
   );
 }

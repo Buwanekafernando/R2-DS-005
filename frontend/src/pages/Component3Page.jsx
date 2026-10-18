@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { apiPost } from "../api.js";
 import Component3Result from "../components/Component3Result.jsx";
+import PageHeader from "../components/PageHeader.jsx";
 import { usePersistedState, clearPersisted } from "../usePersistedState.js";
+import { AGENTS, CATEGORIES } from "../constants.js";
+import { G } from "../components/Term.jsx";
 
-const FIXED_CATEGORIES = ["Apparel", "Baby", "Beauty", "Electronics", "Grocery", "Pet Products", "Sports"];
+// Same 7 product types as every other page (see CATEGORIES in constants.js).
+const FIXED_CATEGORIES = CATEGORIES;
 
 const DEFAULT_FORM = {
   productName: "Luxury Handbag",
   description: "Authentic leather, handcrafted for a professional look.",
   price: 99.0,
-  category: FIXED_CATEGORIES[0],
+  category: "Apparel",
 };
 
 export default function Component3Page({ baseCopy, sourceProductName }) {
@@ -64,93 +68,87 @@ export default function Component3Page({ baseCopy, sourceProductName }) {
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto px-10 py-8 grid grid-cols-1 lg:grid-cols-[1.1fr_1.7fr] gap-8">
-      {/* ── Left: input ── */}
-      <div>
-        <div className="nm-card">
-          <div className="nm-card-header">
-            <span className="nm-card-title">Product Details</span>
-            <button
-              onClick={clearForm}
-              style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
-            >
-              Clear form
-            </button>
-          </div>
-          <div className="nm-card-body">
-            <span className="field-label">Product Name</span>
-            <input className="nm-input" value={form.productName} onChange={update("productName")} />
+    <div className="page page-wide">
+      <PageHeader
+        title={`${AGENTS.urgency.emoji} Why act now`}
+        intro={`Try the urgency helper on its own (${AGENTS.urgency.component}: ${AGENTS.urgency.research}). It writes low, medium and high urgency versions of your message, picks the one that fits, and checks it still feels believable.`}
+      />
 
-            <span className="field-label">Category</span>
-            <select className="nm-select" value={form.category} onChange={update("category")}>
-              {FIXED_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.7fr] gap-8">
+        <div>
+          <div className="nm-card">
+            <div className="nm-card-header">
+              <h2 className="nm-card-title">Your product</h2>
+              <button className="link-btn" onClick={clearForm}>Clear</button>
+            </div>
+            <div className="nm-card-body">
+              <label className="field-label" htmlFor="c3-name">Product name</label>
+              <input id="c3-name" className="nm-input" value={form.productName} onChange={update("productName")} />
 
-            <span className="field-label">Product Description / Base Copy</span>
-            <textarea className="nm-textarea" rows={3} value={form.description} onChange={update("description")} />
-            {baseCopy && (
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                Pre-filled from your Buying Psychology result — edit freely.
+              <label className="field-label" htmlFor="c3-cat">Product type</label>
+              <select id="c3-cat" className="nm-select" value={form.category} onChange={update("category")}>
+                {FIXED_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+
+              <label className="field-label" htmlFor="c3-desc">Your message or product description</label>
+              <p className="field-help">
+                {baseCopy
+                  ? "Filled in from your \"How they decide\" result. Change it if you like."
+                  : "Tip: try \"How they decide\" first and its message is filled in here for you."}
+              </p>
+              <textarea id="c3-desc" className="nm-textarea" rows={4} value={form.description} onChange={update("description")} />
+
+              <label className="field-label" htmlFor="c3-price">Price</label>
+              <div className="input-prefix">
+                <span aria-hidden="true">Rs.</span>
+                <input id="c3-price" className="nm-input" type="number" inputMode="decimal" min="0" step="0.01" value={form.price} onChange={update("price")} />
               </div>
-            )}
-
-            <span className="field-label">Price</span>
-            <input className="nm-input" type="number" min="0" step="0.01" value={form.price} onChange={update("price")} />
+            </div>
           </div>
+
+          <button className="nm-btn-primary" disabled={loading || !form.productName.trim() || !form.description.trim()} onClick={activate}>
+            {loading ? "Adding urgency…" : "Add urgency to my message"}
+          </button>
         </div>
 
-        <button className="nm-btn-primary" disabled={loading || !form.productName.trim() || !form.description.trim()} onClick={activate}>
-          {loading ? "Activating Agent…" : "Activate Scarcity Agent"}
-        </button>
-      </div>
+        <div>
+          {error && <div className="error-box" role="alert" style={{ marginTop: 0, marginBottom: 12 }}>{error}</div>}
 
-      {/* ── Right: results ── */}
-      <div>
-        {error && <p className="text-sm mb-3" style={{ color: "var(--coral-600)" }}>{error}</p>}
-
-        {!results && !loading && (
-          <div className="nm-card">
-            <div className="nm-card-body">
-              <div className="empty-state">
-                <div className="empty-title">Waiting for Research Input</div>
-                <div className="empty-desc">Enter product details and activate the agent to see scarcity-optimized strategies.</div>
+          {!results && !loading && (
+            <div className="nm-card">
+              <div className="nm-card-body empty-state">
+                <div className="empty-icon" style={{ background: "var(--orange-50)", border: "1px solid var(--orange-100)" }} aria-hidden="true">{AGENTS.urgency.emoji}</div>
+                <div className="empty-title">Your urgency options will appear here</div>
+                <div className="empty-desc"><G>Fill in your product, then press "Add urgency to my message".</G></div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {loading && (
-          <div className="nm-card">
-            <div className="nm-card-body">
-              <div className="empty-state">
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
-                  border: "3px solid var(--border)",
-                  borderTop: "3px solid var(--coral-400)",
-                  animation: "spin 1s linear infinite",
-                  margin: "0 auto 16px",
-                }} />
-                <div className="empty-title" style={{ fontSize: 14 }}>Checking urgency fit…</div>
-                <div className="empty-desc">Scoring how well scarcity messaging suits this product. Usually takes about 5–10 seconds.</div>
+          {loading && (
+            <div className="nm-card" aria-live="polite">
+              <div className="nm-card-body empty-state">
+                <div className="spinner" />
+                <div className="empty-title">Checking how much urgency fits…</div>
+                <div className="empty-desc"><G>Writing three versions and scoring which suits this product. About 5 to 10 seconds.</G></div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {results && (
-          <Component3Result
-            data={{
-              suitability_score: results.suitability_score,
-              recommended_intensity: results.recommendation.recommended_intensity,
-              intensity_score: results.recommendation.intensity_score,
-              reason: results.recommendation.reason,
-              trust_status: results.trust.status,
-              trust_score: results.trust.score,
-              all_copies: results.all_copies,
-            }}
-            rawData={results}
-          />
-        )}
+          {results && (
+            <Component3Result
+              data={{
+                suitability_score: results.suitability_score,
+                recommended_intensity: results.recommendation.recommended_intensity,
+                intensity_score: results.recommendation.intensity_score,
+                reason: results.recommendation.reason,
+                trust_status: results.trust.status,
+                trust_score: results.trust.score,
+                all_copies: results.all_copies,
+              }}
+              rawData={results}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

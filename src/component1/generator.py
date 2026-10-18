@@ -1,4 +1,4 @@
-
+# src/generator.py
 
 import os
 import time
@@ -26,9 +26,9 @@ GROK_MODEL = "grok-3"
 print(f"Grok client ready | Model: {GROK_MODEL}")
 
 
-
+# ════════════════════════════════════════════════════════
 # GENERATION
-
+# ════════════════════════════════════════════════════════
 
 def generate_copy(prompt, retries=3):
     """Single entry point for copy generation. Called by src/agent.py"""
@@ -42,7 +42,9 @@ def generate_copy(prompt, retries=3):
                         "role":    "system",
                         "content": (
                             "You are a world-class marketing copywriter with deep "
-                            "expertise in consumer psychology and neuro-marketing. "
+                            "expertise in consumer psychology and neuro-marketing, "
+                            "who writes in a warm, natural, human voice — like a "
+                            "friendly shop owner, never like a brochure. "
                             "Write only the marketing copy — no labels, no "
                             "explanations, no preamble."
                         )
@@ -89,7 +91,24 @@ def generate_copy(prompt, retries=3):
     return None
 
 
+# ════════════════════════════════════════════════════════
+# HUMAN VOICE
+# Shared tone rules appended to every Component 1 prompt so the copy reads
+# like a real person talking to a customer, not a brochure.
+# ════════════════════════════════════════════════════════
+
+HUMAN_VOICE = """VOICE: Write the way a friendly, switched-on shop owner would talk to a customer they like.
+- Speak straight to the reader using "you" and "your"
+- Use everyday words and natural contractions (you'll, it's, don't)
+- Mix short and longer sentences so it sounds spoken, not scripted
+- Skip stock marketing clichés (e.g. "elevate", "unleash", "game-changer", "revolutionize", "seamless")
+- At most one exclamation mark, and only if it genuinely fits
+- Never sound like a brochure or a robot"""
+
+
+# ════════════════════════════════════════════════════════
 # PROMPT BUILDERS
+# ════════════════════════════════════════════════════════
 
 def build_emotional_prompt(product_text, category, confidence):
     if confidence > 0.85:
@@ -115,6 +134,8 @@ Write a SHORT marketing message (2-3 sentences, max 60 words) that:
 3. Uses simple, vivid words that bypass rational thinking
 4. Does NOT mention technical specifications or rational justifications
 5. {instruction}
+
+{HUMAN_VOICE}
 
 Write ONLY the marketing copy. No labels, no explanations."""
 
@@ -144,6 +165,8 @@ Write a SHORT marketing message (2-3 sentences, max 60 words) that:
 4. Addresses potential objections implicitly
 5. {instruction}
 
+{HUMAN_VOICE}
+
 Write ONLY the marketing copy. No labels, no explanations."""
 
 
@@ -162,10 +185,17 @@ Write a SHORT marketing message (2-3 sentences, max 60 words) that:
 2. Follows with one clear rational reason to justify the purchase
 3. Closes with a subtle call to action
 
+{HUMAN_VOICE}
+
 Write ONLY the marketing copy. No labels, no explanations."""
 
-
+# ════════════════════════════════════════════════════════
 # CHANNEL-SPECIFIC COPY VARIANTS
+# Takes the already-chosen winning copy and reformats it for different
+# marketing channels, rather than writing something unrelated from
+# scratch — keeps the core message and psychological strategy consistent
+# across every format the business owner actually needs to publish.
+# ════════════════════════════════════════════════════════
 
 def build_social_media_prompt(product_text, category, winning_copy):
     return f"""You are a social media copywriter. Adapt the marketing message below into
@@ -180,6 +210,8 @@ Write a social media caption that:
 2. Keeps the same core selling point and emotional tone as the base message
 3. Ends with 3-5 relevant hashtags on a new line
 4. Uses at most one emoji, only if it fits naturally
+
+{HUMAN_VOICE}
 
 Write ONLY the caption. No labels, no explanations."""
 
@@ -198,6 +230,8 @@ Write a product listing description that:
 3. Keeps the same core selling point as the base message
 4. Total length 40-70 words including bullets
 
+{HUMAN_VOICE}
+
 Write ONLY the listing text. No labels, no explanations."""
 
 
@@ -213,6 +247,8 @@ Write, in this exact format:
 SUBJECT: <a short, compelling subject line, under 8 words>
 BODY: <a 2-3 sentence email body that keeps the same core selling point as
 the base message, ending with a clear call to action>
+
+{HUMAN_VOICE}
 
 Write ONLY those two lines. No labels other than SUBJECT: and BODY:, no other explanations."""
 
@@ -276,10 +312,9 @@ of all four analyses into a single piece of ready-to-use copy. Do not just pick 
 messages verbatim — blend them into something better than any single one alone.
 
 Return your answer in EXACTLY this format, nothing else:
-RECOMMENDATION: <the final blended marketing message, 35-60 words, ready to publish as-is>
-RATIONALE: <2-3 plain-English sentences explaining why this combination works for this product \
-and this type of customer decision — a business owner with no marketing background should \
-understand it>
+RECOMMENDATION: <the final blended marketing message, 35-60 words, ready to publish as-is, written in a warm, natural, conversational voice that speaks straight to the customer>
+RATIONALE: <2-3 friendly, plain-English sentences, as if you were explaining it to the business owner over coffee, \
+saying why this combination works for this product and this type of customer — no jargon>
 BEST_FOR: <a short phrase naming where this specific message works best, e.g. "Facebook and \
 Instagram ads" or "Product listing headline" or "Limited-time email promotion">"""
 
