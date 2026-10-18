@@ -1,40 +1,55 @@
-import { useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-// Small "?" icon that shows a plain-language explanation on hover/tap,
-// right next to the confusing term — so the person doesn't have to leave
-// the page and go find the Home page glossary to understand a metric.
-export default function Tooltip({ text }) {
+// Small “?” button that explains something right next to it. Works with a
+// mouse (hover), a finger (tap) and a keyboard (Tab, then Enter). Esc or
+// tapping elsewhere closes it. Shares its look with <Term>.
+export default function Tooltip({ text, label = "What does this mean?" }) {
+  const id = useId();
+  const ref = useRef(null);
   const [open, setOpen] = useState(false);
+  const [place, setPlace] = useState({ shift: 0, below: false });
+
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const half = 150, center = r.left + r.width / 2, margin = 12;
+    let shift = 0;
+    if (center - half < margin) shift = margin - (center - half);
+    else if (center + half > window.innerWidth - margin) shift = window.innerWidth - margin - (center + half);
+    setPlace({ shift, below: r.top < 150 });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
 
   return (
     <span
-      style={{ position: "relative", display: "inline-block", marginLeft: 5 }}
-      onMouseEnter={() => setOpen(true)}
+      ref={ref}
+      className="tip-wrap"
+      onMouseEnter={() => { measure(); setOpen(true); }}
       onMouseLeave={() => setOpen(false)}
     >
-      <span
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          width: 14, height: 14, borderRadius: "50%",
-          background: "var(--border)", color: "var(--text-secondary)",
-          fontSize: 10, fontWeight: 700, cursor: "pointer",
-          verticalAlign: "middle", lineHeight: 1,
-        }}
+      <button
+        type="button"
+        className="tip-btn"
+        aria-label={label}
+        aria-expanded={open}
+        aria-describedby={open ? id : undefined}
+        onFocus={() => { measure(); setOpen(true); }}
+        onBlur={() => setOpen(false)}
+        onClick={() => { measure(); setOpen((v) => !v); }}
       >
         ?
-      </span>
+      </button>
       {open && (
-        <span
-          style={{
-            position: "absolute", zIndex: 50, bottom: "130%", left: "50%",
-            transform: "translateX(-50%)", width: 220,
-            background: "var(--text-primary)", color: "var(--surface)",
-            fontSize: 11, fontWeight: 400, lineHeight: 1.5,
-            padding: "8px 10px", borderRadius: "var(--radius-sm)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          }}
-        >
+        <span id={id} role="tooltip" className={`tip-bubble show ${place.below ? "below" : ""}`} style={{ "--tip-shift": `${place.shift}px` }}>
           {text}
         </span>
       )}

@@ -9,14 +9,14 @@ export default function TwoMessagesSummaryCard({ result }) {
   if (!result?.component3 || !result?.component24) return null;
 
   return (
-    <div className="nm-card" style={{ animation: "fadeUp .4s ease .05s both", background: "var(--text-primary)", border: "none" }}>
+    <div className="nm-card" style={{ background: "var(--text-primary)", border: "none" }}>
       <div className="nm-card-body">
-        <div style={{ color: "var(--surface)", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
+        <div style={{ color: "var(--surface)", fontFamily: "Plus Jakarta Sans, sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
           Two more ready-to-use marketing messages for "{result.product}"
         </div>
         <div className="copy-grid">
           <div className="copy-card" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <div className="copy-label" style={{ color: "var(--amber-100)" }}>Urgency-driven</div>
+            <div className="copy-label" style={{ color: "var(--orange-100)" }}>Urgency-driven</div>
             <div className="copy-text" style={{ color: "var(--surface)" }}>{result.component3.final_copy}</div>
             <CopyButton text={result.component3.final_copy} />
           </div>

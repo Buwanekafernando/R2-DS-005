@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiPost } from "../api.js";
 import { usePersistedState, clearPersisted } from "../usePersistedState.js";
-import { CATEGORIES } from "../constants.js";
+import { CATEGORIES, categoryLabel, validCategory } from "../constants.js";
 import CopyButton from "../components/CopyButton.jsx";
+import PageHeader from "../components/PageHeader.jsx";
 
 const EMPTY_ROW = () => ({ product_text: "", category: CATEGORIES[0] });
 const MAX_PRODUCTS = 10;
@@ -13,20 +14,24 @@ export default function BatchPage() {
   const [error, setError] = useState("");
   const [results, setResults] = useState(null);
 
+  // Rows saved by an older version may use a product type that's no longer offered
+  useEffect(() => {
+    if (rows.some((r) => validCategory(r.category) !== r.category)) {
+      setRows(rows.map((r) => ({ ...r, category: validCategory(r.category) })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filled = rows.filter((r) => r.product_text.trim()).length;
+
   const updateRow = (i, key) => (e) => {
     const updated = [...rows];
     updated[i] = { ...updated[i], [key]: e.target.value };
     setRows(updated);
   };
 
-  const addRow = () => {
-    if (rows.length >= MAX_PRODUCTS) return;
-    setRows([...rows, EMPTY_ROW()]);
-  };
-
-  const removeRow = (i) => {
-    setRows(rows.filter((_, idx) => idx !== i));
-  };
+  const addRow = () => { if (rows.length < MAX_PRODUCTS) setRows([...rows, EMPTY_ROW()]); };
+  const removeRow = (i) => setRows(rows.filter((_, idx) => idx !== i));
 
   const clearAll = () => {
     setRows([EMPTY_ROW(), EMPTY_ROW()]);
@@ -38,7 +43,7 @@ export default function BatchPage() {
   const run = async () => {
     const validRows = rows.filter((r) => r.product_text.trim());
     if (validRows.length === 0) {
-      setError("Add at least one product description.");
+      setError("Describe at least one product first.");
       return;
     }
     setLoading(true);
@@ -55,109 +60,93 @@ export default function BatchPage() {
   };
 
   return (
-    <div className="max-w-[1000px] mx-auto px-10 py-8">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <div>
-          <h1 className="font-display" style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-1px", marginBottom: 6 }}>
-            Batch Mode — Multiple Products
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, maxWidth: 600 }}>
-            Have a whole catalog to work through? Add up to {MAX_PRODUCTS} products here and get
-            each one's Buying Psychology classification and recommended copy in one go — faster
-            than doing them one at a time on the Main Application page.
-          </p>
-        </div>
-        <button
-          onClick={clearAll}
-          style={{ fontSize: 12, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", whiteSpace: "nowrap" }}
-        >
-          Clear all
-        </button>
-      </div>
-
-      <div style={{
-        background: "var(--purple-50)", border: "1px solid var(--purple-100)", borderRadius: "var(--radius-md)",
-        padding: "10px 14px", fontSize: 12, color: "var(--purple-800)", marginBottom: 16,
-      }}>
-        Note: Batch Mode only runs Buying Psychology (classification + copy) for speed — it doesn't
-        add urgency or emotional messaging. Use the Main Application page for the full strategy on
-        any one product.
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Many products at once"
+        intro={`Add up to ${MAX_PRODUCTS} products and get a quick message for each one. This uses only the first AI helper (how customers decide), so it's faster but simpler than the full message.`}
+        aside={<button className="link-btn" onClick={clearAll}>Clear all</button>}
+      />
 
       <div className="nm-card">
-        <div className="nm-card-body space-y-3">
+        <div className="nm-card-body" style={{ display: "grid", gap: 18 }}>
           {rows.map((row, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <div style={{ flex: 1 }}>
+            <div key={i} role="group" aria-label={`Product ${i + 1}`}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span className="field-label" style={{ margin: 0 }}>Product {i + 1}</span>
+                {rows.length > 1 && (
+                  <button type="button" className="link-btn danger" onClick={() => removeRow(i)} aria-label={`Remove product ${i + 1}`}>
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3">
                 <textarea
                   className="nm-textarea"
                   rows={2}
-                  placeholder={`Product ${i + 1} description — e.g. "Sony WH-1000XM5 headphones, 30h battery, ANC"`}
+                  aria-label={`Product ${i + 1} description`}
+                  placeholder="Name and a short description, e.g. Sony WH-1000XM5 headphones, 30-hour battery, noise cancelling"
                   value={row.product_text}
                   onChange={updateRow(i, "product_text")}
                 />
-              </div>
-              <div style={{ width: 160 }}>
-                <select className="nm-select" value={row.category} onChange={updateRow(i, "category")}>
-                  {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                <select className="nm-select" aria-label={`Product ${i + 1} type`} value={row.category} onChange={updateRow(i, "category")}>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                 </select>
               </div>
-              <button
-                onClick={() => removeRow(i)}
-                disabled={rows.length <= 1}
-                style={{ fontSize: 12, color: "var(--coral-600)", background: "none", border: "none", cursor: "pointer", padding: "10px 4px", opacity: rows.length <= 1 ? 0.3 : 1 }}
-              >
-                ✕
-              </button>
             </div>
           ))}
 
           {rows.length < MAX_PRODUCTS && (
-            <button className="nm-btn-ghost" onClick={addRow}>+ Add another product ({rows.length}/{MAX_PRODUCTS})</button>
+            <button className="nm-btn-ghost" onClick={addRow} style={{ textAlign: "center" }}>
+              + Add another product ({rows.length} of {MAX_PRODUCTS})
+            </button>
           )}
         </div>
       </div>
 
       <button className="nm-btn-primary" disabled={loading} onClick={run}>
-        {loading ? "Analyzing all products…" : `Analyze ${rows.filter((r) => r.product_text.trim()).length || ""} Products`}
+        {loading ? "Writing messages…" : filled > 0 ? `Write messages for ${filled} product${filled === 1 ? "" : "s"}` : "Write messages"}
       </button>
       {loading && (
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "center" }}>
-          This takes about 5–10 seconds per product, run one after another.
-        </div>
+        <p style={{ fontSize: 15, color: "var(--text-secondary)", marginTop: 10, textAlign: "center" }} aria-live="polite">
+          Working through them one by one. Allow about 5 to 10 seconds per product.
+        </p>
       )}
 
-      {error && <p className="text-sm mt-3" style={{ color: "var(--coral-600)" }}>{error}</p>}
+      {error && <div className="error-box" role="alert">{error}</div>}
 
       {results && (
-        <div style={{ marginTop: 24 }} className="space-y-3">
-          {results.map((r, i) => (
-            <div key={i} className="nm-card" style={{ margin: 0 }}>
-              <div className="nm-card-body">
-                {r.success ? (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span className="nm-badge" style={{
-                        background: r.data.classification.cognitive_mode === "System1" ? "var(--amber-50)" : "var(--blue-50)",
-                        color: r.data.classification.cognitive_mode === "System1" ? "var(--amber-600)" : "var(--blue-800)",
-                        border: `1px solid ${r.data.classification.cognitive_mode === "System1" ? "var(--amber-100)" : "var(--blue-100)"}`,
-                      }}>
-                        {r.data.classification.cognitive_mode === "System1" ? "Emotional" : "Rational"} · {(r.data.classification.confidence * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>{r.data.input.product_text}</div>
-                    <div className="copy-text">{r.data.agent_output.recommended_copy}</div>
-                    <CopyButton text={r.data.agent_output.recommended_copy} />
-                  </>
-                ) : (
-                  <div style={{ color: "var(--coral-600)", fontSize: 13 }}>
-                    Couldn't analyze "{r.product?.slice(0, 60)}…": {r.error}
+        <section style={{ marginTop: 28 }} aria-label="Results">
+          <h2 className="section-heading" style={{ marginTop: 0 }}>Your messages</h2>
+          <div style={{ display: "grid", gap: 12 }}>
+            {results.map((r, i) => {
+              if (!r.success) {
+                return (
+                  <div key={i} className="error-box" style={{ marginTop: 0 }}>
+                    Couldn't write a message for "{r.product?.slice(0, 60)}…". {r.error}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                );
+              }
+              const feeling = r.data.classification.cognitive_mode === "System1";
+              return (
+                <article key={i} className="nm-card" style={{ margin: 0, borderLeft: `6px solid var(--${feeling ? "orange" : "cyan"}-400)` }}>
+                  <div className="nm-card-body">
+                    <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 8 }}>{r.data.input.product_text}</p>
+                    <span className="nm-badge" style={{
+                      background: feeling ? "var(--orange-50)" : "var(--cyan-50)",
+                      color: feeling ? "var(--orange-600)" : "var(--cyan-800)",
+                      border: `1px solid ${feeling ? "var(--orange-100)" : "var(--cyan-100)"}`,
+                      marginBottom: 10,
+                    }}>
+                      {feeling ? "Bought on feeling" : "Bought after comparing"} ({(r.data.classification.confidence * 100).toFixed(0)}% sure)
+                    </span>
+                    <p className="copy-text" style={{ fontSize: 16 }}>{r.data.agent_output.recommended_copy}</p>
+                    <CopyButton text={r.data.agent_output.recommended_copy} />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
     </div>
   );

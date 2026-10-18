@@ -19,6 +19,11 @@ export function buildStrategyText(result) {
     lines.push("");
     lines.push(`Why: ${result.final_recommendation.rationale || ""}`);
     lines.push(`Best used for: ${result.final_recommendation.best_for || ""}`);
+    const fr = result.final_recommendation;
+    if (fr.detected_emotion) {
+      lines.push(`Feeling check (RoBERTa): aimed for ${fr.target_emotion}, detected ${fr.detected_emotion} (${Math.round((fr.emotion_score || 0) * 100)}%)`);
+    }
+    if (fr.sentiment != null) lines.push(`Sentiment: ${Number(fr.sentiment).toFixed(3)} (-1 to +1) · Tone: ${fr.tone_label || ""} · FOMO phrases: ${fr.fomo_score ?? 0}`);
     lines.push("");
     lines.push(rule);
     lines.push("");

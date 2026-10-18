@@ -17,11 +17,11 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ maxWidth: 600, margin: "80px auto", padding: 24, fontFamily: "DM Sans, sans-serif" }}>
-          <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, marginBottom: 10 }}>
+        <div style={{ maxWidth: 600, margin: "80px auto", padding: 24, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+          <div style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontWeight: 800, fontSize: 22, marginBottom: 10 }}>
             Something went wrong
           </div>
-          <p style={{ color: "#6B6860", fontSize: 14, marginBottom: 16, lineHeight: 1.6 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 16, lineHeight: 1.6 }}>
             The page hit an unexpected error while rendering. Your backend request may have
             succeeded — this is a display bug, not necessarily a lost result. Reloading usually
             clears it.
@@ -31,7 +31,7 @@ export default class ErrorBoundary extends Component {
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ background: "#1A1916", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, cursor: "pointer" }}
+            style={{ background: "var(--violet-solid)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, cursor: "pointer" }}
           >
             Reload page
           </button>
