@@ -201,3 +201,17 @@ that added too.
 The two original Streamlit UIs (`ui/app_component1.py`, `ui/app_component3.py`)
 are left in place and still work standalone if you ever want them, but the
 React app is now the primary frontend for the full system.
+
+
+## Human-tone update (panel feedback)
+
+- **Component 1 responses** now read like a person talking: the classification `reasoning` and the recommendation `explanation` are plain-language sentences, and every Component 1 copy prompt (emotional, rational, hybrid, social, listing, email, final blend) carries a shared `HUMAN_VOICE` block in `src/component1/generator.py`. The classifier outputs and field names are unchanged.
+- **Main Application UI** is friendlier: conversational headings and labels, a "Try an example" button, optional customer details tucked into a collapsible step, rotating progress messages while it works, a warmer result layout, and the full per-agent breakdown folded under "See how we got here".
+
+## Frontend redesign (beginner-friendly, light + dark)
+
+- **Themes:** midnight-blue dark mode and a light mode, switched with the Light/Dark button in the top bar (remembers your choice; first visit follows the device setting). Accent colours: cyan, orange, yellow, purple — each AI helper keeps one colour everywhere.
+- **Full-width layout:** pages use the whole screen; the Create page has a "What to do now / What happens next" guide beside the form; results show the message on the left and the findings on the right. Phones get a bottom tab bar.
+- **Hover explanations:** every technical word (urgency, FOMO, sentiment, RoBERTa, loss framing …) has a dotted underline; hover, Tab or tap it for a plain-English meaning. Add or edit words in `frontend/src/glossary.js`; wrap any text in `<G>…</G>` (`components/Term.jsx`) to enable them.
+- **Flat, minimal colour:** no gradients, glows, confetti or floating animations. Each element uses one flat colour: orange only for the main action button, green for done/safe, coral-red for caution, and each helper's own colour (cyan, orange, yellow, purple) for its cards. The feature panels follow the theme (soft lavender in light mode, midnight blue in dark mode).
+- Built on the supplied `frontend-design-research` source; run `npm install && npm run build` in `frontend/`.
